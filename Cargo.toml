@@ -1,0 +1,12 @@
+[package]
+name = "indexer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+alloy = { git = "https://github.com/alloy-rs/alloy", version = "0.1.0", features = [
+    "contract",
+    "provider-http",
+    "rpc-types-eth",
+] }
+tokio = { version = "1.37.0", features = ["full"] }
