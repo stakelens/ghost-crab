@@ -1,6 +1,10 @@
 use alloy::{providers::ProviderBuilder, sol};
+use db::establish_connection;
 use indexer::{process_logs, HandlerParams, ProcessLogsParams};
+mod db;
 mod indexer;
+mod models;
+mod schema;
 
 sol!(
     #[sol(rpc)]
@@ -10,9 +14,9 @@ sol!(
 
 #[tokio::main]
 async fn main() {
-    let rpc_url = ""
-        .parse()
-        .unwrap();
+    establish_connection();
+
+    let rpc_url = "".parse().unwrap();
 
     let provider = ProviderBuilder::new().on_http(rpc_url);
 
