@@ -2,6 +2,7 @@ use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::{Filter, Log};
 use alloy::transports::http::{Client, Http};
 use diesel::PgConnection;
+use async_trait::async_trait;
 
 pub struct HandlerParams<'a> {
     pub log: Log,
@@ -9,13 +10,16 @@ pub struct HandlerParams<'a> {
     pub conn: &'a mut PgConnection,
 }
 
-type Handler = fn(HandlerParams);
+#[async_trait]
+pub trait Handleable {
+    async fn handle(&self, params: HandlerParams<'_>);
+}
 
 pub struct ProcessLogsParams {
     pub from_block: u64,
     pub to_block: u64,
     pub event: String,
-    pub handler: Handler,
+    pub handler: Box<dyn Handleable>,
     pub provider: RootProvider<Http<Client>>,
     pub conn: PgConnection,
 }
@@ -38,10 +42,10 @@ pub async fn process_logs(
     let logs = provider.get_logs(&filter).await.unwrap();
 
     for log in logs {
-        handler(HandlerParams {
+        handler.handle(HandlerParams {
             log,
             provider: provider.clone(),
             conn: &mut conn,
-        });
+        }).await;
     }
 }

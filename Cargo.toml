@@ -12,3 +12,4 @@ alloy = { git = "https://github.com/alloy-rs/alloy", version = "0.1.0", features
 tokio = { version = "1.37.0", features = ["full"] }
 diesel = { version = "2.2.0", features = ["postgres"] }
 dotenvy = "0.15"
+async-trait = "0.1.80"

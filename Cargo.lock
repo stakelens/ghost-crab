@@ -1464,6 +1464,7 @@ name = "indexer"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "async-trait",
  "diesel",
  "dotenvy",
  "tokio",
