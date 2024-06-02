@@ -34,53 +34,127 @@ impl RocketPoolHandler {
 #[async_trait]
 impl Handleable for RocketPoolHandler {
     async fn handle(&self, params: HandlerParams<'_>) {
-        println!("Log: {:?}", params.log);
+        let blocknumber = params.log.block_number.unwrap();
 
-        // let blocknumber = params.log.block_number.unwrap();
+        let rocket_vault_contract = RocketVault::new(
+            "0x3bdc69c4e5e13e52a65f5583c23efb9636b469d6"
+                .parse()
+                .unwrap(),
+            &params.provider,
+        );
 
-        // let rocket_minipool_manager_contract = RocketMinipoolManager::new(
-        //     "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        //         .parse()
-        //         .unwrap(),
-        //     &params.provider,
-        // );
+        let rocket_minipool_manager_contract = RocketMinipoolManager::new(
+            "0x6d010c43d4e96d74c422f2e27370af48711b49bf"
+                .parse()
+                .unwrap(),
+            &params.provider,
+        );
 
-        // let rocket_node_staking_contract = RocketNodeStaking::new(
-        //     "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        //         .parse()
-        //         .unwrap(),
-        //     &params.provider,
-        // );
+        let rocket_node_staking_contract = RocketNodeStaking::new(
+            "0x0d8d8f8541b12a0e1194b7cc4b6d954b90ab82ec"
+                .parse()
+                .unwrap(),
+            &params.provider,
+        );
 
-        // let rocket_vault_contract = RocketVault::new(
-        //     "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        //         .parse()
-        //         .unwrap(),
-        //     &params.provider,
-        // );
+        let mut total_eth: Uint<256, 4> = Uint::from(0);
+        let mut total_rpl: Uint<256, 4> = Uint::from(0);
 
-        // let mut total_eth: i64 = 0;
-        // let mut total_rpl: i64 = 0;
+        let limit = 400;
+        let mut offset = 0;
 
-        // let mut limit = 1000;
-        // let mut offset = 0;
+        let mut initialised_minipools: Uint<256, 4> = Uint::from(0);
+        let mut prelaunch_minipools: Uint<256, 4> = Uint::from(0);
+        let mut staking_minipools: Uint<256, 4> = Uint::from(0);
+        let mut withdrawable_minipools: Uint<256, 4> = Uint::from(0);
 
-        // let mut initialised_minipools: u64 = 0;
-        // let mut prelaunch_minipools: i64 = 0;
-        // let mut staking_minipools: i64 = 0;
-        // let mut withdrawable_minipools: i64 = 0;
+        loop {
+            let active_minipools = rocket_minipool_manager_contract
+                .getMinipoolCountPerStatus(Uint::from(offset), Uint::from(limit))
+                .block(alloy::rpc::types::eth::BlockId::Number(
+                    BlockNumberOrTag::Number(blocknumber),
+                ))
+                .call()
+                .await
+                .unwrap();
 
-        // loop {
-        //     let active_minipools = rocket_minipool_manager_contract
-        //         .getMinipoolCountPerStatus(Uint::from(limit), Uint::from(offset))
-        //         .block(alloy::rpc::types::eth::BlockId::Number(
-        //             BlockNumberOrTag::Number(blocknumber),
-        //         ))
-        //         .call()
-        //         .await
-        //         .unwrap();
-        // }
+            initialised_minipools += active_minipools.initialisedCount;
+            prelaunch_minipools += active_minipools.prelaunchCount;
+            staking_minipools += active_minipools.stakingCount;
+            withdrawable_minipools += active_minipools.withdrawableCount;
 
+            let mut total: u64 = 0;
+
+            total += active_minipools.initialisedCount.to::<u64>();
+            total += active_minipools.prelaunchCount.to::<u64>();
+            total += active_minipools.stakingCount.to::<u64>();
+            total += active_minipools.withdrawableCount.to::<u64>();
+            total += active_minipools.dissolvedCount.to::<u64>();
+
+            if total < limit {
+                break;
+            }
+
+            offset += limit;
+        }
+
+        let mut eth_locked_in_minipools: Uint<256, 4> = Uint::from(0);
+
+        eth_locked_in_minipools += initialised_minipools * Uint::from(16);
+        eth_locked_in_minipools += prelaunch_minipools * Uint::from(32);
+        eth_locked_in_minipools += staking_minipools * Uint::from(32);
+        eth_locked_in_minipools += withdrawable_minipools * Uint::from(32);
+        eth_locked_in_minipools = eth_locked_in_minipools * Uint::from(1e18);
+
+        total_eth += eth_locked_in_minipools;
+
+        let rocket_deposit_pool_eth = rocket_vault_contract
+            .balanceOf(String::from("rocketDepositPool"))
+            .block(alloy::rpc::types::eth::BlockId::Number(
+                BlockNumberOrTag::Number(blocknumber),
+            ))
+            .call()
+            .await
+            .unwrap();
+
+        total_eth += rocket_deposit_pool_eth._0;
+
+        let total_rpl_stacked = rocket_node_staking_contract
+            .getTotalRPLStake()
+            .block(alloy::rpc::types::eth::BlockId::Number(
+                BlockNumberOrTag::Number(blocknumber),
+            ))
+            .call()
+            .await
+            .unwrap();
+
+        total_rpl += total_rpl_stacked._0;
+
+        let rocket_dao_node_trusted_actions_rpl_balance = rocket_vault_contract
+            .balanceOf(String::from("rocketDAONodeTrustedActions"))
+            .block(alloy::rpc::types::eth::BlockId::Number(
+                BlockNumberOrTag::Number(blocknumber),
+            ))
+            .call()
+            .await
+            .unwrap();
+
+        total_rpl += rocket_dao_node_trusted_actions_rpl_balance._0;
+
+        let rocket_auction_manager_rpl_balance = rocket_vault_contract
+            .balanceOf(String::from("rocketAuctionManager"))
+            .block(alloy::rpc::types::eth::BlockId::Number(
+                BlockNumberOrTag::Number(blocknumber),
+            ))
+            .call()
+            .await
+            .unwrap();
+
+        total_rpl += rocket_auction_manager_rpl_balance._0;
+
+        println!("Blocknumber: {}", blocknumber);
+        println!("Total ETH: {}", total_eth);
+        println!("Total RPL: {}", total_rpl);
         // add_tvl(
         //     &mut conn,
         //     AddTvl {
