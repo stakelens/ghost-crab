@@ -5,7 +5,7 @@ use diesel::PgConnection;
 
 pub struct HandlerParams<'a> {
     pub log: Log,
-    pub client: RootProvider<Http<Client>>,
+    pub provider: RootProvider<Http<Client>>,
     pub conn: &'a mut PgConnection,
 }
 
@@ -40,7 +40,7 @@ pub async fn process_logs(
     for log in logs {
         handler(HandlerParams {
             log,
-            client: provider.clone(),
+            provider: provider.clone(),
             conn: &mut conn,
         });
     }

@@ -17,6 +17,8 @@ pub fn establish_connection() -> PgConnection {
 #[diesel(table_name = tvl)]
 pub struct AddTvl {
     pub eth: i64,
+    pub rpl: i64,
+    pub blocknumber: i64,
 }
 
 pub fn add_tvl(conn: &mut PgConnection, value: AddTvl) -> TVL {
