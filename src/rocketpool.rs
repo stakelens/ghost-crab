@@ -33,7 +33,7 @@ impl RocketPoolHandler {
 
 #[async_trait]
 impl Handleable for RocketPoolHandler {
-    async fn handle(&self, params: HandlerParams<'_>) {
+    async fn handle(&self, params: HandlerParams) {
         let blocknumber = params.log.block_number.unwrap();
 
         let rocket_vault_contract = RocketVault::new(
