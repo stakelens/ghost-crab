@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 
+use alloy::primitives::Address;
 use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::{Filter, Log};
 use alloy::transports::http::{Client, Http};
@@ -20,7 +21,8 @@ pub trait Handleable {
 pub struct ProcessLogsParams<'a> {
     pub from_block: u64,
     pub to_block: u64,
-    pub event: String,
+    pub address: &'a str,
+    pub event: &'a str,
     pub handler: &'a dyn Handleable,
     pub provider: RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
@@ -30,6 +32,7 @@ pub async fn process_logs_in_range(
     ProcessLogsParams {
         from_block,
         to_block,
+        address,
         event,
         handler,
         provider,
@@ -37,6 +40,7 @@ pub async fn process_logs_in_range(
     }: ProcessLogsParams<'_>,
 ) {
     let filter = Filter::new()
+        .address(address.parse::<Address>().unwrap())
         .event(&event)
         .from_block(from_block)
         .to_block(to_block);
@@ -54,10 +58,11 @@ pub async fn process_logs_in_range(
     }
 }
 
-pub struct ProcessLogs {
+pub struct ProcessLogs<'a> {
     pub start_block: u64,
     pub step: u64,
-    pub event: String,
+    pub event: &'a str,
+    pub address: &'a str,
     pub handler: Box<dyn Handleable>,
     pub provider: RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
@@ -67,38 +72,40 @@ pub async fn process_logs(
     ProcessLogs {
         start_block,
         step,
+        address,
         event,
         handler,
         provider,
         conn,
-    }: ProcessLogs,
+    }: ProcessLogs<'_>,
 ) {
     let mut current_block = start_block;
 
     loop {
-        let mut next_block = current_block + step;
+        let mut end_block = current_block + step;
         let latest_block = provider.get_block_number().await.unwrap();
 
-        if current_block == next_block {
+        if current_block == end_block {
             println!("Reached latest block: {}", current_block);
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
         }
 
-        if next_block > latest_block {
-            next_block = latest_block;
+        if end_block > latest_block {
+            end_block = latest_block;
         }
 
         process_logs_in_range(ProcessLogsParams {
             from_block: current_block,
-            to_block: next_block,
-            event: event.clone(),
+            to_block: end_block,
+            address: address,
+            event: event,
             handler: &*handler,
             provider: provider.clone(),
             conn: conn.clone(),
         })
         .await;
 
-        current_block = next_block;
+        current_block = end_block;
     }
 }

@@ -21,8 +21,9 @@ async fn main() {
 
     process_logs_in_range(ProcessLogsParams {
         from_block: 19_796_144,
-        to_block: 19_796_144 + 10,
-        event: "Transfer(address,address,uint256)".parse().unwrap(),
+        to_block: 19_796_144 + 10000,
+        address: "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
+        event: "MinipoolCreated(address,address,uint256)",
         handler: &*RocketPoolHandler::new(),
         provider: provider.clone(),
         conn: Arc::new(Mutex::new(conn)),
