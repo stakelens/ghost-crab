@@ -16,8 +16,8 @@ pub fn establish_connection() -> PgConnection {
 #[derive(Insertable)]
 #[diesel(table_name = tvl)]
 pub struct AddTvl {
-    pub eth: i64,
-    pub rpl: i64,
+    pub eth: String,
+    pub rpl: String,
     pub blocknumber: i64,
 }
 

@@ -13,7 +13,9 @@ mod schema;
 async fn main() {
     let conn = establish_connection();
 
-    let rpc_url = "".parse().unwrap();
+    let rpc_url = ""
+        .parse()
+        .unwrap();
 
     let provider = ProviderBuilder::new().on_http(rpc_url);
 

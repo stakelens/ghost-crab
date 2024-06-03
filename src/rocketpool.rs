@@ -69,6 +69,7 @@ impl Handleable for RocketPoolHandler {
         let mut withdrawable_minipools: Uint<256, 4> = Uint::from(0);
 
         loop {
+            println!("Get minipools: {} {}", offset, limit);
             let active_minipools = rocket_minipool_manager_contract
                 .getMinipoolCountPerStatus(Uint::from(offset), Uint::from(limit))
                 .block(alloy::rpc::types::eth::BlockId::Number(
@@ -155,13 +156,17 @@ impl Handleable for RocketPoolHandler {
         println!("Blocknumber: {}", blocknumber);
         println!("Total ETH: {}", total_eth);
         println!("Total RPL: {}", total_rpl);
-        // add_tvl(
-        //     &mut conn,
-        //     AddTvl {
-        //         eth: 2,
-        //         rpl: 3,
-        //         blocknumber,
-        //     },
-        // );
+
+        let blocknumber = blocknumber as i64;
+        let mut conn = params.conn.lock().unwrap();
+
+        add_tvl(
+            &mut conn,
+            AddTvl {
+                eth: total_eth.to_string(),
+                rpl: total_rpl.to_string(),
+                blocknumber,
+            },
+        );
     }
 }

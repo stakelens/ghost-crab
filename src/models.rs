@@ -5,5 +5,5 @@ use diesel::prelude::*;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct TVL {
     pub id: i32,
-    pub eth: i64,
+    pub eth: String,
 }
