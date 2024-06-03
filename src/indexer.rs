@@ -63,7 +63,7 @@ pub struct ProcessLogs<'a> {
     pub step: u64,
     pub event: &'a str,
     pub address: &'a str,
-    pub handler: Box<dyn Handleable>,
+    pub handler: &'a dyn Handleable,
     pub provider: RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
 }
@@ -84,16 +84,18 @@ pub async fn process_logs(
     loop {
         let mut end_block = current_block + step;
         let latest_block = provider.get_block_number().await.unwrap();
-
+        
         if current_block == end_block {
             println!("Reached latest block: {}", current_block);
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
         }
-
+        
         if end_block > latest_block {
             end_block = latest_block;
         }
+
+        println!("Processing logs from {} to {}", current_block, end_block);
 
         process_logs_in_range(ProcessLogsParams {
             from_block: current_block,

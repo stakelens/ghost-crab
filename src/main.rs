@@ -1,6 +1,6 @@
 use alloy::providers::ProviderBuilder;
 use db::establish_connection;
-use indexer::{process_logs_in_range, ProcessLogsParams};
+use indexer::{process_logs, ProcessLogs};
 use rocketpool::RocketPoolHandler;
 use std::sync::{Arc, Mutex};
 mod db;
@@ -19,9 +19,9 @@ async fn main() {
 
     let provider = ProviderBuilder::new().on_http(rpc_url);
 
-    process_logs_in_range(ProcessLogsParams {
-        from_block: 19_796_144,
-        to_block: 19_796_144 + 10000,
+    process_logs(ProcessLogs {
+        start_block: 19_796_144,
+        step: 10_000,
         address: "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
         event: "MinipoolCreated(address,address,uint256)",
         handler: &*RocketPoolHandler::new(),
