@@ -23,8 +23,8 @@ pub struct ProcessLogsParams<'a> {
     pub to_block: u64,
     pub address: &'a str,
     pub event: &'a str,
-    pub handler: &'a dyn Handleable,
-    pub provider: RootProvider<Http<Client>>,
+    pub handler: &'a Box<(dyn Handleable + Send + Sync)>,
+    pub provider: &'a RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
 }
 
@@ -63,12 +63,12 @@ pub struct ProcessLogs<'a> {
     pub step: u64,
     pub event: &'a str,
     pub address: &'a str,
-    pub handler: &'a dyn Handleable,
-    pub provider: RootProvider<Http<Client>>,
+    pub handler: Box<(dyn Handleable + Send + Sync)>,
+    pub provider: Arc<RootProvider<Http<Client>>>,
     pub conn: Arc<Mutex<PgConnection>>,
 }
 
-pub async fn process_logs(
+pub async fn process_log(
     ProcessLogs {
         start_block,
         step,
@@ -84,13 +84,13 @@ pub async fn process_logs(
     loop {
         let mut end_block = current_block + step;
         let latest_block = provider.get_block_number().await.unwrap();
-        
+
         if current_block == end_block {
             println!("Reached latest block: {}", current_block);
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
         }
-        
+
         if end_block > latest_block {
             end_block = latest_block;
         }
@@ -102,8 +102,8 @@ pub async fn process_logs(
             to_block: end_block,
             address: address,
             event: event,
-            handler: &*handler,
-            provider: provider.clone(),
+            handler: &handler,
+            provider: &provider,
             conn: conn.clone(),
         })
         .await;
