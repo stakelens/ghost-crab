@@ -16,13 +16,13 @@ pub struct HandlerParams {
 #[async_trait]
 pub trait Handleable {
     async fn handle(&self, params: HandlerParams);
+    fn get_event(&self) -> String;
 }
 
 pub struct ProcessLogsParams<'a> {
     pub from_block: u64,
     pub to_block: u64,
     pub address: &'a str,
-    pub event: &'a str,
     pub handler: &'a Box<(dyn Handleable + Send + Sync)>,
     pub provider: &'a RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
@@ -33,7 +33,6 @@ pub async fn process_logs_in_range(
         from_block,
         to_block,
         address,
-        event,
         handler,
         provider,
         conn,
@@ -41,7 +40,7 @@ pub async fn process_logs_in_range(
 ) {
     let filter = Filter::new()
         .address(address.parse::<Address>().unwrap())
-        .event(&event)
+        .event(&handler.get_event())
         .from_block(from_block)
         .to_block(to_block);
 
@@ -61,7 +60,6 @@ pub async fn process_logs_in_range(
 pub struct ProcessLogsConfig<'a> {
     pub start_block: u64,
     pub step: u64,
-    pub event: &'a str,
     pub address: &'a str,
     pub handler: Box<(dyn Handleable + Send + Sync)>,
 }
@@ -69,7 +67,6 @@ pub struct ProcessLogsConfig<'a> {
 pub struct ProcessLogs<'a> {
     pub start_block: u64,
     pub step: u64,
-    pub event: &'a str,
     pub address: &'a str,
     pub handler: Box<(dyn Handleable + Send + Sync)>,
     pub provider: Arc<RootProvider<Http<Client>>>,
@@ -81,7 +78,6 @@ pub async fn process_log(
         start_block,
         step,
         address,
-        event,
         handler,
         provider,
         conn,
@@ -109,7 +105,6 @@ pub async fn process_log(
             from_block: current_block,
             to_block: end_block,
             address: address,
-            event: event,
             handler: &handler,
             provider: &provider,
             conn: conn.clone(),

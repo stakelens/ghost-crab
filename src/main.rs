@@ -28,7 +28,6 @@ async fn main() {
             start_block: 19_796_144,
             step: 10_000,
             address: "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
-            event: "MinipoolCreated(address,address,uint256)",
             handler: RocketPoolHandler::new(),
         }],
     })
@@ -48,7 +47,6 @@ async fn run(config: Config<'static>) {
             start_block: config.start_block,
             step: config.step,
             address: config.address,
-            event: config.event,
             handler: RocketPoolHandler::new(),
             provider: Arc::clone(&provider),
             conn: Arc::clone(&conn),
