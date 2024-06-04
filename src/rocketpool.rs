@@ -26,8 +26,8 @@ sol!(
 pub struct RocketPoolHandler;
 
 impl RocketPoolHandler {
-    pub fn new() -> Box<Self> {
-        Box::new(Self)
+    pub fn new() -> Self {
+        Self
     }
 }
 
