@@ -58,6 +58,14 @@ pub async fn process_logs_in_range(
     }
 }
 
+pub struct ProcessLogsConfig<'a> {
+    pub start_block: u64,
+    pub step: u64,
+    pub event: &'a str,
+    pub address: &'a str,
+    pub handler: Box<(dyn Handleable + Send + Sync)>,
+}
+
 pub struct ProcessLogs<'a> {
     pub start_block: u64,
     pub step: u64,
