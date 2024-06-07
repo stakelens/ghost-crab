@@ -7,6 +7,7 @@ mod db;
 mod indexer;
 mod models;
 mod rocketpool;
+mod rpc_cache;
 mod schema;
 use dotenvy::dotenv;
 use std::env;
@@ -35,9 +36,15 @@ async fn main() {
 }
 
 async fn run(config: Config<'static>) {
+    let rpc_with_cache = rpc_cache::RpcWithCache::new(config.rpc_url.clone());
     let conn = establish_connection(config.db_url);
-    let rpc_url = config.rpc_url.parse().unwrap();
-    let provider = Arc::new(ProviderBuilder::new().on_http(rpc_url));
+    let provider =
+        Arc::new(ProviderBuilder::new().on_http("http://localhost:3000".parse().unwrap()));
+
+    tokio::spawn(async move {
+        rpc_with_cache.run().await;
+    });
+
     let conn = Arc::new(Mutex::new(conn));
 
     let handlers = config
