@@ -36,7 +36,8 @@ async fn main() {
 }
 
 async fn run(config: Config<'static>) {
-    let rpc_with_cache = rpc_cache::RpcWithCache::new(config.rpc_url.clone());
+    let rpc_with_cache =
+        rpc_cache::RpcWithCache::new(config.db_url.clone(), config.rpc_url.clone());
     let conn = establish_connection(config.db_url);
     let provider =
         Arc::new(ProviderBuilder::new().on_http("http://localhost:3000".parse().unwrap()));

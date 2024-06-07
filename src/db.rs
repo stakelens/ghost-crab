@@ -1,5 +1,5 @@
 use crate::models::TVL;
-use crate::schema::tvl;
+use crate::schema::{cache, tvl};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -21,5 +21,27 @@ pub fn add_tvl(conn: &mut PgConnection, value: AddTvl) -> TVL {
         .values(&value)
         .returning(TVL::as_returning())
         .get_result(conn)
-        .expect("Error saving new post")
+        .expect("Error saving TVL")
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = cache)]
+pub struct AddCache {
+    pub id: String,
+    pub data: String,
+}
+
+pub fn add_cache(conn: &mut PgConnection, value: AddCache) {
+    diesel::insert_into(cache::table)
+        .values(&value)
+        .execute(conn)
+        .expect("Error saving cache");
+}
+
+pub fn get_cache(conn: &mut PgConnection, id: &str) -> Option<String> {
+    cache::table
+        .find(id)
+        .first::<(String, String)>(conn)
+        .map(|(_, data)| data)
+        .ok()
 }

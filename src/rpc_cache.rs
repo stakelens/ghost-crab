@@ -1,8 +1,12 @@
-// use crate::db::establish_connection;
-// use diesel::PgConnection;
+use crate::db::{add_cache, establish_connection, get_cache, AddCache};
+use diesel::PgConnection;
+
 use std::convert::Infallible;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
+use blake3;
 use bytes::Bytes;
 use http_body_util::BodyExt;
 use http_body_util::Full;
@@ -16,19 +20,20 @@ use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use tokio::net::TcpListener;
 
 pub struct RpcWithCache {
-    // connection: PgConnection,
-    rpc_url: String,
+    connection: Arc<Mutex<PgConnection>>,
+    rpc_url: Arc<String>,
     pub url: String,
 }
 
 impl RpcWithCache {
-    pub fn new(/*database_url: String, */ rpc_url: String) -> Self {
-        // let connection = establish_connection(database_url);
+    pub fn new(database_url: String, rpc_url: String) -> Self {
+        let connection = Arc::new(Mutex::new(establish_connection(database_url)));
         let url = "127.0.0.1:3000";
 
         Self {
-            rpc_url,
+            rpc_url: Arc::new(rpc_url),
             url: url.to_string(),
+            connection,
         }
     }
 
@@ -37,16 +42,20 @@ impl RpcWithCache {
         let listener = TcpListener::bind(addr).await.unwrap();
 
         loop {
-            let rpc_url = self.rpc_url.clone();
             let (tcp, _) = listener.accept().await.unwrap();
             let io = TokioIo::new(tcp);
 
-            tokio::task::spawn(async move {
+            let rpc_url = Arc::clone(&self.rpc_url);
+            let connection = Arc::clone(&self.connection);
+
+            tokio::task::spawn(async {
                 if let Err(err) = http1::Builder::new()
                     .timer(TokioTimer::new())
                     .serve_connection(
                         io,
-                        service_fn(move |request| handler(request, rpc_url.clone())),
+                        service_fn(move |request| {
+                            handler(request, Arc::clone(&rpc_url), Arc::clone(&connection))
+                        }),
                     )
                     .await
                 {
@@ -59,22 +68,30 @@ impl RpcWithCache {
 
 async fn handler(
     request: Request<hyper::body::Incoming>,
-    rpc_url: String,
+    rpc_url: Arc<String>,
+    connection: Arc<Mutex<PgConnection>>,
 ) -> Result<Response<Full<Bytes>>, Infallible> {
     let https = HttpsConnector::new();
     let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
     let request_received = request.collect().await.unwrap().to_bytes();
+    let request_hash = blake3::hash(&request_received).to_string();
 
-    println!("RPC request: {:?}", request_received);
+    {
+        let mut conn = connection.lock().await;
+
+        if let Some(data) = get_cache(&mut conn, &request_hash) {
+            return Ok(Response::new(Full::new(Bytes::from(data))));
+        }
+
+        drop(conn);
+    }
 
     let rpc_quest = hyper::Request::builder()
         .method("POST")
-        .uri(rpc_url)
+        .uri(rpc_url.as_str())
         .header("Content-Type", "application/json")
         .body(Full::new(request_received.clone()))
         .unwrap();
-
-    println!("Foward request: {:?}", rpc_quest);
 
     let rpc_response = client
         .request(rpc_quest)
@@ -85,7 +102,16 @@ async fn handler(
         .unwrap()
         .to_bytes();
 
-    println!("RPC response: {:?}", rpc_response);
+    let mut conn = connection.lock().await;
+    let rpc_response_string = String::from_utf8(rpc_response.to_vec()).unwrap();
+
+    add_cache(
+        &mut conn,
+        AddCache {
+            id: request_hash,
+            data: rpc_response_string,
+        },
+    );
 
     Ok(Response::new(Full::new(rpc_response)))
 }
