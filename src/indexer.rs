@@ -6,7 +6,6 @@ use alloy::rpc::types::eth::{Filter, Log};
 use alloy::transports::http::{Client, Http};
 use async_trait::async_trait;
 use diesel::PgConnection;
-use tokio::task::JoinHandle;
 
 pub struct HandlerParams {
     pub log: Log,
@@ -21,9 +20,7 @@ pub trait Handleable {
 }
 
 pub struct ProcessLogsParams<'a> {
-    pub from_block: u64,
-    pub to_block: u64,
-    pub address: &'a str,
+    pub filter: Filter,
     pub handler: Arc<Box<(dyn Handleable + Send + Sync)>>,
     pub provider: &'a RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
@@ -31,28 +28,20 @@ pub struct ProcessLogsParams<'a> {
 
 pub async fn process_logs_in_range(
     ProcessLogsParams {
-        from_block,
-        to_block,
-        address,
+        filter,
         handler,
         provider,
         conn,
     }: ProcessLogsParams<'_>,
 ) {
-    let filter = Filter::new()
-        .address(address.parse::<Address>().unwrap())
-        .event(&handler.get_event())
-        .from_block(from_block)
-        .to_block(to_block);
-
     let logs = provider.get_logs(&filter).await.unwrap();
 
     let handlers = logs
         .into_iter()
         .map(|log| {
-            let handler = handler.clone();
+            let conn = Arc::clone(&conn);
+            let handler = Arc::clone(&handler);
             let provider = provider.clone();
-            let conn = conn.clone();
 
             tokio::spawn(async move {
                 handler
@@ -64,7 +53,7 @@ pub async fn process_logs_in_range(
                     .await;
             })
         })
-        .collect::<Vec<JoinHandle<()>>>();
+        .collect::<Vec<_>>();
 
     for handle in handlers {
         handle.await.unwrap();
@@ -100,6 +89,9 @@ pub async fn process_log(
     let mut current_block = start_block;
     let handler = Arc::new(handler);
 
+    let event_signature = handler.get_event();
+    let address = address.parse::<Address>().unwrap();
+
     loop {
         let mut end_block = current_block + step;
         let latest_block = provider.get_block_number().await.unwrap();
@@ -116,10 +108,14 @@ pub async fn process_log(
 
         println!("Processing logs from {} to {}", current_block, end_block);
 
+        let filter = Filter::new()
+            .address(address)
+            .event(&event_signature)
+            .from_block(current_block)
+            .to_block(end_block);
+
         process_logs_in_range(ProcessLogsParams {
-            from_block: current_block,
-            to_block: end_block,
-            address: address,
+            filter: filter,
             handler: Arc::clone(&handler),
             provider: &provider,
             conn: conn.clone(),
