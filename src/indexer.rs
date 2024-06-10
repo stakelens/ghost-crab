@@ -65,6 +65,7 @@ pub struct ProcessLogsConfig<'a> {
     pub step: u64,
     pub address: &'a str,
     pub handler: Box<(dyn Handleable + Send + Sync)>,
+    pub ingester: Arc<RootProvider<Http<Client>>>,
 }
 
 pub struct ProcessLogs<'a> {
