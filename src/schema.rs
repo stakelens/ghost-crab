@@ -2,7 +2,7 @@
 
 diesel::table! {
     cache (id) {
-        id -> Bytea,
+        id -> Text,
         data -> Text,
     }
 }
@@ -24,8 +24,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(
-    cache,
-    etherfi_tvl,
-    rocketpool_tvl,
-);
+diesel::allow_tables_to_appear_in_same_query!(cache, etherfi_tvl, rocketpool_tvl,);

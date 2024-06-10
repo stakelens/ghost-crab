@@ -56,6 +56,7 @@ async fn run(config: Config<'static>) {
     let eth_rpc_with_cache = rpc_cache::RpcWithCache::new(
         config.db_url.clone(),
         config.rpc_config.rpc_urls.get(&1).unwrap().clone(),
+        3000,
     );
     let eth_provider =
         Arc::new(ProviderBuilder::new().on_http("http://localhost:3000".parse().unwrap()));
@@ -68,6 +69,7 @@ async fn run(config: Config<'static>) {
     let opt_rpc_with_cache = rpc_cache::RpcWithCache::new(
         config.db_url.clone(),
         config.rpc_config.rpc_urls.get(&10).unwrap().clone(),
+        3001,
     );
     let opt_provider =
         Arc::new(ProviderBuilder::new().on_http("http://localhost:3001".parse().unwrap()));

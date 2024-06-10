@@ -22,23 +22,22 @@ use tokio::net::TcpListener;
 pub struct RpcWithCache {
     connection: Arc<Mutex<PgConnection>>,
     rpc_url: Arc<String>,
-    pub url: String,
+    port: u16,
 }
 
 impl RpcWithCache {
-    pub fn new(database_url: String, rpc_url: String) -> Self {
+    pub fn new(database_url: String, rpc_url: String, port: u16) -> Self {
         let connection = Arc::new(Mutex::new(establish_connection(database_url)));
-        let url = "127.0.0.1:3000";
 
         Self {
             rpc_url: Arc::new(rpc_url),
-            url: url.to_string(),
             connection,
+            port,
         }
     }
 
     pub async fn run(&self) {
-        let addr: SocketAddr = ([127, 0, 0, 1], 3000).into();
+        let addr: SocketAddr = ([127, 0, 0, 1], self.port).into();
         let listener = TcpListener::bind(addr).await.unwrap();
 
         loop {
