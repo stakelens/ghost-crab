@@ -52,8 +52,8 @@ async fn main() {
                 ),
             },
             ProcessLogsConfig {
-                start_block: 105_927_637,
-                step: 10_000,
+                start_block: 121_226_300,
+                step: 100,
                 address: "0x6329004E903B7F420245E7aF3f355186f2432466",
                 handler: EtherfiHandler::new(),
                 ingester: Arc::new(
@@ -66,11 +66,11 @@ async fn main() {
 }
 
 async fn run(config: Config<'static>) {
-    // Ethereum Mainnet (ChainID: 1)
     let eth_rpc_with_cache = rpc_cache::RpcWithCache::new(
         config.db_url.clone(),
         config.rpc_config.rpc_urls.get(&1).unwrap().clone(),
         3000,
+        1, // Ethereum Mainnet (ChainID: 1)
     );
 
     tokio::spawn(async move {
@@ -82,6 +82,7 @@ async fn run(config: Config<'static>) {
         config.db_url.clone(),
         config.rpc_config.rpc_urls.get(&10).unwrap().clone(),
         3001,
+        10, // Optimism (ChainID: 10)
     );
 
     tokio::spawn(async move {
