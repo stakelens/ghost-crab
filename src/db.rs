@@ -1,5 +1,6 @@
-use crate::models::TVL;
-use crate::schema::{cache, tvl};
+use crate::models::EtherfiTVL;
+use crate::models::RocketPoolTVL;
+use crate::schema::{cache, etherfi_tvl, rocketpool_tvl};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -9,19 +10,34 @@ pub fn establish_connection(database_url: String) -> PgConnection {
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = tvl)]
-pub struct AddTvl {
+#[diesel(table_name = rocketpool_tvl)]
+pub struct AddRocketPoolTVL {
     pub eth: String,
     pub rpl: String,
     pub blocknumber: i64,
 }
 
-pub fn add_tvl(conn: &mut PgConnection, value: AddTvl) -> TVL {
-    diesel::insert_into(tvl::table)
+pub fn add_rocketpool_tvl(conn: &mut PgConnection, value: AddRocketPoolTVL) -> RocketPoolTVL {
+    diesel::insert_into(rocketpool_tvl::table)
         .values(&value)
-        .returning(TVL::as_returning())
+        .returning(RocketPoolTVL::as_returning())
         .get_result(conn)
-        .expect("Error saving TVL")
+        .expect("Error saving RocketPoolTVL")
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = etherfi_tvl)]
+pub struct AddEtherfiTVL {
+    pub eth: String,
+    pub blocknumber: i64,
+}
+
+pub fn add_etherfi_tvl(conn: &mut PgConnection, value: AddEtherfiTVL) -> EtherfiTVL {
+    diesel::insert_into(etherfi_tvl::table)
+        .values(&value)
+        .returning(EtherfiTVL::as_returning())
+        .get_result(conn)
+        .expect("Error saving EtherfiTVL")
 }
 
 #[derive(Insertable)]
