@@ -115,15 +115,18 @@ async fn handler(
         .to_bytes();
 
     let mut conn = connection.lock().await;
-    let rpc_response_string = String::from_utf8(rpc_response.to_vec()).unwrap();
+    let rpc_response_string = String::from_utf8_lossy(&rpc_response);
 
-    add_cache(
-        &mut conn,
-        AddCache {
-            id: request_hash,
-            data: rpc_response_string,
-        },
-    );
+    // Avoid caching errors
+    if !rpc_response_string.contains(r#""error":{"code":-"#) {
+        add_cache(
+            &mut conn,
+            AddCache {
+                id: request_hash,
+                data: rpc_response_string.to_string(),
+            },
+        );
+    }
 
     Ok(Response::new(Full::new(rpc_response)))
 }

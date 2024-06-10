@@ -10,12 +10,9 @@ mod indexer;
 mod models;
 mod rpc_cache;
 mod schema;
+mod handlers;
 use dotenvy::dotenv;
 use std::env;
-mod handlers {
-    pub mod etherfi;
-    pub mod rocketpool;
-}
 use handlers::etherfi::EtherfiHandler;
 use handlers::rocketpool::RocketPoolHandler;
 
@@ -53,7 +50,7 @@ async fn main() {
             },
             ProcessLogsConfig {
                 start_block: 121_226_300,
-                step: 100,
+                step: 1000,
                 address: "0x6329004E903B7F420245E7aF3f355186f2432466",
                 handler: EtherfiHandler::new(),
                 ingester: Arc::new(
