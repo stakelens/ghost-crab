@@ -22,23 +22,24 @@ use tokio::net::TcpListener;
 pub struct RpcWithCache {
     connection: Arc<Mutex<PgConnection>>,
     rpc_url: Arc<String>,
-    pub url: String,
+    port: u16,
+    chain_id: u64,
 }
 
 impl RpcWithCache {
-    pub fn new(database_url: String, rpc_url: String) -> Self {
+    pub fn new(database_url: String, rpc_url: String, port: u16, chain_id: u64) -> Self {
         let connection = Arc::new(Mutex::new(establish_connection(database_url)));
-        let url = "127.0.0.1:3000";
 
         Self {
             rpc_url: Arc::new(rpc_url),
-            url: url.to_string(),
             connection,
+            port,
+            chain_id,
         }
     }
 
     pub async fn run(&self) {
-        let addr: SocketAddr = ([127, 0, 0, 1], 3000).into();
+        let addr: SocketAddr = ([127, 0, 0, 1], self.port).into();
         let listener = TcpListener::bind(addr).await.unwrap();
 
         loop {
@@ -47,14 +48,20 @@ impl RpcWithCache {
 
             let rpc_url = Arc::clone(&self.rpc_url);
             let connection = Arc::clone(&self.connection);
+            let chain_id = self.chain_id;
 
-            tokio::task::spawn(async {
+            tokio::task::spawn(async move {
                 if let Err(err) = http1::Builder::new()
                     .timer(TokioTimer::new())
                     .serve_connection(
                         io,
                         service_fn(move |request| {
-                            handler(request, Arc::clone(&rpc_url), Arc::clone(&connection))
+                            handler(
+                                request,
+                                Arc::clone(&rpc_url),
+                                Arc::clone(&connection),
+                                chain_id,
+                            )
                         }),
                     )
                     .await
@@ -70,11 +77,16 @@ async fn handler(
     request: Request<hyper::body::Incoming>,
     rpc_url: Arc<String>,
     connection: Arc<Mutex<PgConnection>>,
+    chain_id: u64,
 ) -> Result<Response<Full<Bytes>>, Infallible> {
     let https = HttpsConnector::new();
     let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
     let request_received = request.collect().await.unwrap().to_bytes();
-    let request_hash = blake3::hash(&request_received).to_string();
+    println!(
+        "Request received: {}",
+        String::from_utf8_lossy(&request_received)
+    );
+    let request_hash = blake3::hash(&request_received).to_string() + &chain_id.to_string();
 
     {
         let mut conn = connection.lock().await;
@@ -103,15 +115,18 @@ async fn handler(
         .to_bytes();
 
     let mut conn = connection.lock().await;
-    let rpc_response_string = String::from_utf8(rpc_response.to_vec()).unwrap();
+    let rpc_response_string = String::from_utf8_lossy(&rpc_response);
 
-    add_cache(
-        &mut conn,
-        AddCache {
-            id: request_hash,
-            data: rpc_response_string,
-        },
-    );
+    // Avoid caching errors
+    if !rpc_response_string.contains(r#""error":{"code":-"#) {
+        add_cache(
+            &mut conn,
+            AddCache {
+                id: request_hash,
+                data: rpc_response_string.to_string(),
+            },
+        );
+    }
 
     Ok(Response::new(Full::new(rpc_response)))
 }

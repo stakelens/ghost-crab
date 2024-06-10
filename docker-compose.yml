@@ -1,0 +1,18 @@
+services:
+  indexer-db:
+    image: postgres:16.2-alpine
+    container_name: indexer-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: indexer-db
+    ports:
+      - 15432:5432
+    volumes:
+      - ./db/data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

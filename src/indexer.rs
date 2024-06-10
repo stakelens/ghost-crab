@@ -65,6 +65,7 @@ pub struct ProcessLogsConfig<'a> {
     pub step: u64,
     pub address: &'a str,
     pub handler: Box<(dyn Handleable + Send + Sync)>,
+    pub ingester: Arc<RootProvider<Http<Client>>>,
 }
 
 pub struct ProcessLogs<'a> {
@@ -115,7 +116,7 @@ pub async fn process_log(
             .to_block(end_block);
 
         process_logs_in_range(ProcessLogsParams {
-            filter: filter,
+            filter,
             handler: Arc::clone(&handler),
             provider: &provider,
             conn: conn.clone(),

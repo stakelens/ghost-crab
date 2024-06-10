@@ -8,7 +8,15 @@ diesel::table! {
 }
 
 diesel::table! {
-    tvl (id) {
+    etherfi_tvl (id) {
+        id -> Int4,
+        blocknumber -> Int8,
+        eth -> Text,
+    }
+}
+
+diesel::table! {
+    rocketpool_tvl (id) {
         id -> Int4,
         blocknumber -> Int8,
         eth -> Text,
@@ -18,5 +26,6 @@ diesel::table! {
 
 diesel::allow_tables_to_appear_in_same_query!(
     cache,
-    tvl,
+    etherfi_tvl,
+    rocketpool_tvl,
 );

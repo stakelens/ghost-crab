@@ -1,5 +1,5 @@
 use crate::{
-    db::{add_tvl, AddTvl},
+    db::{add_rocketpool_tvl, AddRocketPoolTVL},
     indexer::{Handleable, HandlerParams},
 };
 use alloy::{primitives::Uint, rpc::types::eth::BlockNumberOrTag, sol, sol_types::SolEvent};
@@ -8,19 +8,19 @@ use async_trait::async_trait;
 sol!(
     #[sol(rpc)]
     RocketMinipoolManager,
-    "abi/RocketMinipoolManager.json"
+    "abis/rocketpool/RocketMinipoolManager.json"
 );
 
 sol!(
     #[sol(rpc)]
     RocketNodeStaking,
-    "abi/RocketNodeStaking.json"
+    "abis/rocketpool/RocketNodeStaking.json"
 );
 
 sol!(
     #[sol(rpc)]
     RocketVault,
-    "abi/RocketVault.json"
+    "abis/rocketpool/RocketVault.json"
 );
 
 #[derive(Clone)]
@@ -165,9 +165,9 @@ impl Handleable for RocketPoolHandler {
         let blocknumber = blocknumber as i64;
         let mut conn = params.conn.lock().unwrap();
 
-        add_tvl(
+        add_rocketpool_tvl(
             &mut conn,
-            AddTvl {
+            AddRocketPoolTVL {
                 eth: total_eth.to_string(),
                 rpl: total_rpl.to_string(),
                 blocknumber,
