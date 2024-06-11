@@ -55,7 +55,7 @@ impl RpcWithCache {
                     .timer(TokioTimer::new())
                     .serve_connection(
                         io,
-                        service_fn(move |request| {
+                        service_fn(|request| {
                             handler(
                                 request,
                                 Arc::clone(&rpc_url),
