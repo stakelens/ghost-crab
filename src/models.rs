@@ -15,3 +15,13 @@ pub struct EtherfiTVL {
     pub id: i32,
     pub eth: String,
 }
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::schema::swell_tvl)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct SwellTVL {
+    pub id: i32,
+    pub sweth: String,
+    pub rate: String,
+    pub blocknumber: i64,
+}

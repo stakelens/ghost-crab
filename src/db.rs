@@ -1,6 +1,7 @@
 use crate::models::EtherfiTVL;
 use crate::models::RocketPoolTVL;
-use crate::schema::{cache, etherfi_tvl, rocketpool_tvl};
+use crate::models::SwellTVL;
+use crate::schema::{cache, etherfi_tvl, rocketpool_tvl, swell_tvl};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -38,6 +39,22 @@ pub fn add_etherfi_tvl(conn: &mut PgConnection, value: AddEtherfiTVL) -> Etherfi
         .returning(EtherfiTVL::as_returning())
         .get_result(conn)
         .expect("Error saving EtherfiTVL")
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = swell_tvl)]
+pub struct AddSwellTVL {
+    pub sweth: String,
+    pub rate: String,
+    pub blocknumber: i64,
+}
+
+pub fn add_swell_tvl(conn: &mut PgConnection, value: AddSwellTVL) -> SwellTVL {
+    diesel::insert_into(swell_tvl::table)
+        .values(&value)
+        .returning(SwellTVL::as_returning())
+        .get_result(conn)
+        .expect("Error saving SwellTVL")
 }
 
 #[derive(Insertable)]
