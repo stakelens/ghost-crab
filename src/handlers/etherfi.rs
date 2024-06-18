@@ -2,7 +2,7 @@ use crate::{
     db::{add_etherfi_tvl, AddEtherfiTVL},
     indexer::{Handleable, HandlerParams},
 };
-use alloy::{ rpc::types::eth::BlockNumberOrTag, sol, sol_types::SolEvent};
+use alloy::{rpc::types::eth::BlockNumberOrTag, sol, sol_types::SolEvent};
 use async_trait::async_trait;
 
 sol!(
@@ -22,7 +22,7 @@ impl EtherfiHandler {
 
 #[async_trait]
 impl Handleable for EtherfiHandler {
-    fn get_event(&self) -> String {
+    fn get_event_signature(&self) -> String {
         TVLOracle::TVLUpdated::SIGNATURE.to_string()
     }
 

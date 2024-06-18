@@ -82,10 +82,6 @@ async fn handler(
     let https = HttpsConnector::new();
     let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
     let request_received = request.collect().await.unwrap().to_bytes();
-    println!(
-        "Request received: {}",
-        String::from_utf8_lossy(&request_received)
-    );
     let request_hash = blake3::hash(&request_received).to_string() + &chain_id.to_string();
 
     {

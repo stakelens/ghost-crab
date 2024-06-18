@@ -21,7 +21,16 @@ pub struct EtherfiTVL {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct SwellTVL {
     pub id: i32,
-    pub sweth: String,
-    pub rate: String,
+    pub eth: String,
     pub blocknumber: i64,
+}
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = crate::schema::stakewise_tvl)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct StakewiseTVL {
+    pub id: i32,
+    pub eth: String,
+    pub blocknumber: i64,
+    pub rewards: String,
 }

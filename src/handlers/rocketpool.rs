@@ -34,7 +34,7 @@ impl RocketPoolHandler {
 
 #[async_trait]
 impl Handleable for RocketPoolHandler {
-    fn get_event(&self) -> String {
+    fn get_event_signature(&self) -> String {
         RocketMinipoolManager::MinipoolCreated::SIGNATURE.to_string()
     }
 

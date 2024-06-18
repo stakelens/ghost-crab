@@ -23,7 +23,7 @@ impl SwellHandler {
 #[async_trait]
 impl Handleable for SwellHandler {
     // TODO: we should update multiple events to trigger a handler
-    fn get_event(&self) -> String {
+    fn get_event_signature(&self) -> String {
         swETH::ETHDepositReceived::SIGNATURE.to_string()
     }
 
@@ -58,11 +58,12 @@ impl Handleable for SwellHandler {
         let blocknumber = blocknumber as i64;
         let mut conn = params.conn.lock().unwrap();
 
+        let eth_tvl = total_supply._0 * rate._0;
+
         add_swell_tvl(
             &mut conn,
             AddSwellTVL {
-                sweth: total_supply._0.to_string(),
-                rate: rate._0.to_string(),
+                eth: eth_tvl.to_string(),
                 blocknumber,
             },
         );

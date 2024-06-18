@@ -16,7 +16,7 @@ pub struct HandlerParams {
 #[async_trait]
 pub trait Handleable {
     async fn handle(&self, params: HandlerParams);
-    fn get_event(&self) -> String;
+    fn get_event_signature(&self) -> String;
 }
 
 pub struct ProcessLogsParams<'a> {
@@ -60,7 +60,7 @@ pub async fn process_logs_in_range(
     }
 }
 
-pub struct ProcessLogsConfig<'a> {
+pub struct DataSourceConfig<'a> {
     pub start_block: u64,
     pub step: u64,
     pub address: &'a str,
@@ -90,7 +90,7 @@ pub async fn process_log(
     let mut current_block = start_block;
     let handler = Arc::new(handler);
 
-    let event_signature = handler.get_event();
+    let event_signature = handler.get_event_signature();
     let address = address.parse::<Address>().unwrap();
 
     loop {

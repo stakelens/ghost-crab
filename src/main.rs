@@ -1,20 +1,19 @@
 use alloy::providers::ProviderBuilder;
 use db::establish_connection;
-use indexer::{process_log, ProcessLogs, ProcessLogsConfig};
+use indexer::{process_log, DataSourceConfig, ProcessLogs};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
 mod db;
+mod handlers;
 mod indexer;
 mod models;
 mod rpc_cache;
 mod schema;
-mod handlers;
 use dotenvy::dotenv;
-use std::env;
-use handlers::etherfi::EtherfiHandler;
 use handlers::rocketpool::RocketPoolHandler;
+use std::env;
 
 struct RpcConfig {
     rpc_urls: HashMap<u64, String>,
@@ -23,7 +22,7 @@ struct RpcConfig {
 struct Config<'a> {
     rpc_config: RpcConfig,
     db_url: String,
-    handlers: Vec<ProcessLogsConfig<'a>>,
+    data_sources: Vec<DataSourceConfig<'a>>,
 }
 
 #[tokio::main]
@@ -38,26 +37,15 @@ async fn main() {
             ]),
         },
         db_url: env::var("DATABASE_URL").unwrap(),
-        handlers: vec![
-            ProcessLogsConfig {
-                start_block: 19_796_144,
-                step: 10_000,
-                address: "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
-                handler: RocketPoolHandler::new(),
-                ingester: Arc::new(
-                    ProviderBuilder::new().on_http("http://localhost:3000".parse().unwrap()),
-                ),
-            },
-            ProcessLogsConfig {
-                start_block: 121_226_300,
-                step: 1000,
-                address: "0x6329004E903B7F420245E7aF3f355186f2432466",
-                handler: EtherfiHandler::new(),
-                ingester: Arc::new(
-                    ProviderBuilder::new().on_http("http://localhost:3001".parse().unwrap()),
-                ),
-            },
-        ],
+        data_sources: vec![DataSourceConfig {
+            start_block: 19_796_144,
+            step: 10_000,
+            address: "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
+            handler: RocketPoolHandler::new(),
+            ingester: Arc::new(
+                ProviderBuilder::new().on_http("http://localhost:3000".parse().unwrap()),
+            ),
+        }],
     })
     .await;
 }
@@ -91,7 +79,7 @@ async fn run(config: Config<'static>) {
     let conn = Arc::new(Mutex::new(conn));
 
     let handlers = config
-        .handlers
+        .data_sources
         .into_iter()
         .map(|config| ProcessLogs {
             start_block: config.start_block,
