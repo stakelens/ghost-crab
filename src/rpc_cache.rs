@@ -23,18 +23,16 @@ pub struct RpcWithCache {
     connection: Arc<Mutex<PgConnection>>,
     rpc_url: Arc<String>,
     port: u16,
-    chain_id: u64,
 }
 
 impl RpcWithCache {
-    pub fn new(database_url: String, rpc_url: String, port: u16, chain_id: u64) -> Self {
+    pub fn new(database_url: String, rpc_url: String, port: u16) -> Self {
         let connection = Arc::new(Mutex::new(establish_connection(database_url)));
 
         Self {
             rpc_url: Arc::new(rpc_url),
             connection,
             port,
-            chain_id,
         }
     }
 
@@ -48,7 +46,6 @@ impl RpcWithCache {
 
             let rpc_url = Arc::clone(&self.rpc_url);
             let connection = Arc::clone(&self.connection);
-            let chain_id = self.chain_id;
 
             tokio::task::spawn(async move {
                 if let Err(err) = http1::Builder::new()
@@ -56,12 +53,7 @@ impl RpcWithCache {
                     .serve_connection(
                         io,
                         service_fn(|request| {
-                            handler(
-                                request,
-                                Arc::clone(&rpc_url),
-                                Arc::clone(&connection),
-                                chain_id,
-                            )
+                            handler(request, Arc::clone(&rpc_url), Arc::clone(&connection))
                         }),
                     )
                     .await
@@ -77,12 +69,14 @@ async fn handler(
     request: Request<hyper::body::Incoming>,
     rpc_url: Arc<String>,
     connection: Arc<Mutex<PgConnection>>,
-    chain_id: u64,
 ) -> Result<Response<Full<Bytes>>, Infallible> {
     let https = HttpsConnector::new();
     let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
     let request_received = request.collect().await.unwrap().to_bytes();
-    let request_hash = blake3::hash(&request_received).to_string() + &chain_id.to_string();
+
+    let rpc_url_bytes = Bytes::from(rpc_url.to_string());
+    let request_hash =
+        blake3::hash(&[request_received.clone(), rpc_url_bytes].concat()).to_string();
 
     {
         let mut conn = connection.lock().await;
