@@ -50,7 +50,7 @@ async fn main() {
     .await;
 }
 
-async fn run(config: Config<'static>) {
+async fn start_cache(config: &Config<'static>) {
     let eth_rpc_with_cache = rpc_cache::RpcWithCache::new(
         config.db_url.clone(),
         config.rpc_config.rpc_urls.get(&1).unwrap().clone(),
@@ -73,6 +73,10 @@ async fn run(config: Config<'static>) {
     tokio::spawn(async move {
         opt_rpc_with_cache.run().await;
     });
+}
+
+async fn run(config: Config<'static>) {
+    start_cache(&config).await;
 
     let conn = establish_connection(config.db_url);
 
