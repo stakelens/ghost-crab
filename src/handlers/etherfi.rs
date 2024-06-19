@@ -22,10 +22,6 @@ impl EtherfiHandler {
 
 #[async_trait]
 impl Handleable for EtherfiHandler {
-    fn get_event_signature(&self) -> String {
-        TVLOracle::TVLUpdated::SIGNATURE.to_string()
-    }
-
     async fn handle(&self, params: Context) {
         let blocknumber = params.log.block_number.unwrap();
 

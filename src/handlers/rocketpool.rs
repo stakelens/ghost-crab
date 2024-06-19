@@ -34,10 +34,6 @@ impl RocketPoolHandler {
 
 #[async_trait]
 impl Handleable for RocketPoolHandler {
-    fn get_event_signature(&self) -> String {
-        RocketMinipoolManager::MinipoolCreated::SIGNATURE.to_string()
-    }
-
     async fn handle(&self, params: Context) {
         let blocknumber = params.log.block_number.unwrap();
 

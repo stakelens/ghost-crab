@@ -21,7 +21,6 @@ pub struct Context {
 #[async_trait]
 pub trait Handleable {
     async fn handle(&self, params: Context);
-    fn get_event_signature(&self) -> String;
 }
 
 pub struct ProcessLogsParams<'a> {
@@ -69,6 +68,7 @@ pub struct DataSourceConfig<'a> {
     pub start_block: u64,
     pub step: u64,
     pub address: &'a str,
+    pub event_signature: String,
     pub handler: Box<(dyn Handleable + Send + Sync)>,
     pub rpc_url: String,
 }
@@ -80,6 +80,7 @@ pub struct ProcessLogs<'a> {
     pub handler: Box<(dyn Handleable + Send + Sync)>,
     pub provider: Arc<RootProvider<Http<Client>>>,
     pub conn: Arc<Mutex<PgConnection>>,
+    pub event_signature: String,
 }
 
 pub async fn process_log(
@@ -89,13 +90,12 @@ pub async fn process_log(
         address,
         handler,
         provider,
+        event_signature,
         conn,
     }: ProcessLogs<'_>,
 ) {
     let mut current_block = start_block;
     let handler = Arc::new(handler);
-
-    let event_signature = handler.get_event_signature();
     let address = address.parse::<Address>().unwrap();
 
     loop {
@@ -200,6 +200,7 @@ pub async fn run(config: Config<'static>) {
             step: data_source.step,
             address: data_source.address,
             handler: data_source.handler,
+            event_signature: data_source.event_signature,
             provider: Arc::new(ingesters.get(data_source.rpc_url)),
             conn: Arc::clone(&conn),
         })

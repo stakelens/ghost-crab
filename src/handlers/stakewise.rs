@@ -26,9 +26,6 @@ impl StakewiseHandler {
 #[async_trait]
 impl Handleable for StakewiseHandler {
     // TODO: we should update multiple events to trigger a handler
-    fn get_event_signature(&self) -> String {
-        VaultsRegistry::VaultAdded::SIGNATURE.to_string()
-    }
 
     async fn handle(&self, params: Context) {
         // Do nothing

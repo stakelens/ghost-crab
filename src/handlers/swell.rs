@@ -23,9 +23,6 @@ impl SwellHandler {
 #[async_trait]
 impl Handleable for SwellHandler {
     // TODO: we should update multiple events to trigger a handler
-    fn get_event_signature(&self) -> String {
-        swETH::ETHDepositReceived::SIGNATURE.to_string()
-    }
 
     async fn handle(&self, params: Context) {
         let blocknumber = params.log.block_number.unwrap();
