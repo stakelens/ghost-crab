@@ -1,6 +1,6 @@
 use crate::{
     db::{add_rocketpool_tvl, AddRocketPoolTVL},
-    indexer::{Handleable, HandlerParams},
+    indexer::{Handleable, Context},
 };
 use alloy::{primitives::Uint, rpc::types::eth::BlockNumberOrTag, sol, sol_types::SolEvent};
 use async_trait::async_trait;
@@ -38,7 +38,7 @@ impl Handleable for RocketPoolHandler {
         RocketMinipoolManager::MinipoolCreated::SIGNATURE.to_string()
     }
 
-    async fn handle(&self, params: HandlerParams) {
+    async fn handle(&self, params: Context) {
         let blocknumber = params.log.block_number.unwrap();
 
         let rocket_vault_contract = RocketVault::new(

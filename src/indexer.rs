@@ -12,7 +12,7 @@ use diesel::PgConnection;
 use crate::db::establish_connection;
 use crate::rpc_cache;
 
-pub struct HandlerParams {
+pub struct Context {
     pub log: Log,
     pub provider: RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
@@ -20,7 +20,7 @@ pub struct HandlerParams {
 
 #[async_trait]
 pub trait Handleable {
-    async fn handle(&self, params: HandlerParams);
+    async fn handle(&self, params: Context);
     fn get_event_signature(&self) -> String;
 }
 
@@ -50,7 +50,7 @@ pub async fn process_logs_in_range(
 
             tokio::spawn(async move {
                 handler
-                    .handle(HandlerParams {
+                    .handle(Context {
                         log,
                         provider,
                         conn,

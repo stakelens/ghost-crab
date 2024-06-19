@@ -1,6 +1,6 @@
 use crate::{
     db::{add_etherfi_tvl, AddEtherfiTVL},
-    indexer::{Handleable, HandlerParams},
+    indexer::{Handleable, Context},
 };
 use alloy::{rpc::types::eth::BlockNumberOrTag, sol, sol_types::SolEvent};
 use async_trait::async_trait;
@@ -26,7 +26,7 @@ impl Handleable for EtherfiHandler {
         TVLOracle::TVLUpdated::SIGNATURE.to_string()
     }
 
-    async fn handle(&self, params: HandlerParams) {
+    async fn handle(&self, params: Context) {
         let blocknumber = params.log.block_number.unwrap();
 
         let tvl_oracle_contract = TVLOracle::new(

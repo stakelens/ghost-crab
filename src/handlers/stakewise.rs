@@ -1,4 +1,4 @@
-use crate::indexer::{Handleable, HandlerParams};
+use crate::indexer::{Handleable, Context};
 use alloy::{sol, sol_types::SolEvent};
 use async_trait::async_trait;
 
@@ -30,7 +30,7 @@ impl Handleable for StakewiseHandler {
         VaultsRegistry::VaultAdded::SIGNATURE.to_string()
     }
 
-    async fn handle(&self, params: HandlerParams) {
+    async fn handle(&self, params: Context) {
         // Do nothing
     }
 }
