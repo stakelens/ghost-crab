@@ -5,10 +5,10 @@ mod indexer;
 mod models;
 mod rpc_cache;
 mod schema;
+use alloy::{sol, sol_types::SolEvent};
 use dotenvy::dotenv;
 use handlers::rocketpool::RocketPoolHandler;
 use std::env;
-use alloy::{sol, sol_types::SolEvent};
 
 sol!(
     #[sol(rpc)]
