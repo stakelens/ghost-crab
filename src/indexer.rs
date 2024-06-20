@@ -1,16 +1,12 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-
+use crate::cache;
+use crate::db::establish_connection;
 use alloy::primitives::Address;
-use alloy::providers::ProviderBuilder;
 use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::{Filter, Log};
 use alloy::transports::http::{Client, Http};
 use async_trait::async_trait;
 use diesel::PgConnection;
-
-use crate::db::establish_connection;
-use crate::rpc_cache;
+use std::sync::{Arc, Mutex};
 
 pub struct Context {
     pub log: Log,
@@ -21,6 +17,8 @@ pub struct Context {
 #[async_trait]
 pub trait Handleable {
     async fn handle(&self, params: Context);
+    fn get_data_source(&self) -> String;
+    fn get_event_signature(&self) -> String;
 }
 
 pub struct ProcessLogsParams<'a> {
@@ -64,23 +62,13 @@ pub async fn process_logs_in_range(
     }
 }
 
-pub struct DataSourceConfig<'a> {
+pub struct ProcessLogs {
     pub start_block: u64,
     pub step: u64,
-    pub address: &'a str,
-    pub event_signature: String,
-    pub handler: Box<(dyn Handleable + Send + Sync)>,
-    pub rpc_url: String,
-}
-
-pub struct ProcessLogs<'a> {
-    pub start_block: u64,
-    pub step: u64,
-    pub address: &'a str,
+    pub address: String,
     pub handler: Box<(dyn Handleable + Send + Sync)>,
     pub provider: Arc<RootProvider<Http<Client>>>,
     pub conn: Arc<Mutex<PgConnection>>,
-    pub event_signature: String,
 }
 
 pub async fn process_log(
@@ -90,12 +78,12 @@ pub async fn process_log(
         address,
         handler,
         provider,
-        event_signature,
         conn,
-    }: ProcessLogs<'_>,
+    }: ProcessLogs,
 ) {
     let mut current_block = start_block;
     let handler = Arc::new(handler);
+    let event_signature = handler.get_event_signature();
     let address = address.parse::<Address>().unwrap();
 
     loop {
@@ -132,62 +120,21 @@ pub async fn process_log(
     }
 }
 
-struct IngesterManager {
-    db_url: String,
-    current_port: u16,
-    rpcs: HashMap<String, RootProvider<Http<Client>>>,
+pub struct DataSourceConfig {
+    pub start_block: u64,
+    pub step: u64,
+    pub address: String,
+    pub handler: Box<(dyn Handleable + Send + Sync)>,
+    pub rpc_url: String,
 }
 
-impl IngesterManager {
-    fn new(db_url: String) -> Self {
-        IngesterManager {
-            db_url: db_url,
-            current_port: 3000,
-            rpcs: HashMap::new(),
-        }
-    }
-
-    fn get(&mut self, rpc_url: String) -> RootProvider<Http<Client>> {
-        let result = self.rpcs.get(&rpc_url);
-
-        match result {
-            Some(value) => {
-                return value.clone();
-            }
-            None => {
-                let provider = ProviderBuilder::new().on_http(
-                    format!("http://localhost:{}", self.current_port)
-                        .parse()
-                        .unwrap(),
-                );
-
-                self.rpcs.insert(rpc_url.clone(), provider.clone());
-
-                // Start the Ingester service
-                let rpc_with_cache = rpc_cache::RpcWithCache::new(
-                    self.db_url.clone(),
-                    rpc_url.clone(),
-                    self.current_port,
-                );
-
-                tokio::spawn(async move {
-                    rpc_with_cache.run().await;
-                });
-
-                self.current_port = self.current_port + 1;
-                return provider;
-            }
-        }
-    }
-}
-
-pub struct Config<'a> {
+pub struct Config {
     pub db_url: String,
-    pub data_sources: Vec<DataSourceConfig<'a>>,
+    pub data_sources: Vec<DataSourceConfig>,
 }
 
-pub async fn run(config: Config<'static>) {
-    let mut ingesters = IngesterManager::new(config.db_url.clone());
+pub async fn run(config: Config) {
+    let mut ingesters = cache::manager::RPCManager::new(config.db_url.clone());
     let conn = establish_connection(config.db_url);
 
     let conn = Arc::new(Mutex::new(conn));
@@ -198,9 +145,8 @@ pub async fn run(config: Config<'static>) {
         .map(|data_source| ProcessLogs {
             start_block: data_source.start_block,
             step: data_source.step,
-            address: data_source.address,
+            address: data_source.address.clone(),
             handler: data_source.handler,
-            event_signature: data_source.event_signature,
             provider: Arc::new(ingesters.get(data_source.rpc_url)),
             conn: Arc::clone(&conn),
         })

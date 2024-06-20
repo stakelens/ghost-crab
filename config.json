@@ -1,0 +1,15 @@
+{
+  "database": "$DATABASE_URL",
+  "sources": {
+    "RocketPool": {
+      "address": "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
+      "abi": "abis/rocketpool/RocketMinipoolManager.json",
+      "startBlock": 19796144,
+      "network": "ethereum"
+    }
+  },
+  "networks": {
+    "ethereum": "$ETH_RPC_URL",
+    "optimism": "$OPT_RPC_URL"
+  }
+}
