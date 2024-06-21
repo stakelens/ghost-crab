@@ -1,4 +1,4 @@
-use crate::indexer::{Context, Handleable};
+use crate::indexer::{Context, Handler};
 use alloy::{sol, sol_types::SolEvent};
 use async_trait::async_trait;
 use indexer_macros::handler;

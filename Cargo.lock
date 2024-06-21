@@ -1532,6 +1532,7 @@ dependencies = [
  "hyper-tls",
  "hyper-util",
  "indexer-macros",
+ "once_cell",
  "serde",
  "serde_json",
  "tokio",

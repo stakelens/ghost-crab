@@ -1,10 +1,16 @@
 {
   "database": "$DATABASE_URL",
-  "sources": {
+  "dataSources": {
     "RocketPool": {
+      "startBlock": 19796144,
       "address": "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
       "abi": "abis/rocketpool/RocketMinipoolManager.json",
-      "startBlock": 19796144,
+      "network": "ethereum"
+    }
+  },
+  "templates": {
+    "ETHVault": { 
+      "abi": "abis/rocketpool/RocketMinipoolManager.json",
       "network": "ethereum"
     }
   },
