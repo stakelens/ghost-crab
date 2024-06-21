@@ -14,16 +14,12 @@ use std::collections::HashMap;
 #[serde(rename_all = "camelCase")]
 struct Template {
     abi: String,
-    network: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct DataSource {
     abi: String,
-    address: String,
-    start_block: u32,
-    network: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,7 +27,6 @@ struct DataSource {
 struct Config {
     data_sources: HashMap<String, DataSource>,
     templates: HashMap<String, Template>,
-    networks: HashMap<String, String>,
 }
 //
 
@@ -74,7 +69,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let current_dir = std::env::current_dir().unwrap();
     let content = fs::read_to_string(current_dir.join("config.json"));
 
-    let mut abi = String::new();
+    let abi;
     let mut is_template = false;
 
     match content {
