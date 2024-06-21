@@ -3,9 +3,29 @@ use alloy::{sol, sol_types::SolEvent};
 use async_trait::async_trait;
 use indexer_macros::handler;
 
+#[handler(ETHVault.MinipoolCreated)]
+async fn SimpleHandler(context: Context) {
+    println!("");
+    println!("Inside a simple handler!");
+    println!("Processing log: {:?}", context.log);
+    println!("");
+}
+
 #[handler(RocketPool.MinipoolCreated)]
-async fn MinipoolCreatedHandler(context: Context) {
-    println!("Calling minipool created handler for log: {:?}", context.log);
+async fn MinipoolCreatedHandler(ctx: Context) {
+    println!("Calling minipool created handler for log:\n{:?}\n", ctx.log);
+
+    if let Some(block_number) = ctx.log.block_number {
+        if block_number != 20106719 {
+            return;
+        }
+
+        ctx.dynamic.start(
+            SimpleHandler::new(),
+            "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
+            20106719,
+        );
+    }
 }
 
 // use crate::{

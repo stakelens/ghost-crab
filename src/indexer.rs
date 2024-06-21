@@ -1,17 +1,20 @@
 use crate::cache;
 use crate::db::establish_connection;
+use crate::manager::DynamicHandlerManager;
 use alloy::primitives::Address;
 use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::{Filter, Log};
 use alloy::transports::http::{Client, Http};
 use async_trait::async_trait;
 use diesel::PgConnection;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub struct Context {
     pub log: Log,
     pub provider: RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
+    pub dynamic: Arc<DynamicHandlerManager>,
 }
 
 #[async_trait]
@@ -26,9 +29,10 @@ pub struct ProcessLogs {
     pub start_block: u64,
     pub step: u64,
     pub address: String,
-    pub handler: Box<(dyn Handler + Send + Sync)>,
+    pub handler: Arc<Box<(dyn Handler + Send + Sync)>>,
     pub provider: RootProvider<Http<Client>>,
     pub conn: Arc<Mutex<PgConnection>>,
+    pub dynamic_handler_manager: DynamicHandlerManager,
 }
 
 pub async fn process_log(
@@ -39,10 +43,12 @@ pub async fn process_log(
         handler,
         provider,
         conn,
+        dynamic_handler_manager,
     }: ProcessLogs,
 ) {
     let mut current_block = start_block;
     let handler = Arc::new(handler);
+    let dynamic_handler_manager = Arc::new(dynamic_handler_manager);
     let event_signature = handler.get_event_signature();
     let address = address.parse::<Address>().unwrap();
 
@@ -76,6 +82,7 @@ pub async fn process_log(
                 let conn = Arc::clone(&conn);
                 let handler = Arc::clone(&handler);
                 let provider = provider.clone();
+                let dynamic_handler_manager = Arc::clone(&dynamic_handler_manager);
 
                 tokio::spawn(async move {
                     handler
@@ -83,6 +90,7 @@ pub async fn process_log(
                             log,
                             provider,
                             conn,
+                            dynamic: dynamic_handler_manager,
                         })
                         .await;
                 })
@@ -101,35 +109,37 @@ pub struct DataSourceConfig {
     pub start_block: u64,
     pub step: u64,
     pub address: String,
-    pub handler: Box<(dyn Handler + Send + Sync)>,
+    pub handler: Arc<Box<(dyn Handler + Send + Sync)>>,
     pub rpc_url: String,
 }
 
 pub struct RunInput {
     pub database: String,
     pub data_sources: Vec<DataSourceConfig>,
+    pub dynamic_handler_manager: DynamicHandlerManager,
 }
 
 pub async fn run(input: RunInput) {
     let mut rpc_manager = cache::manager::RPCManager::new(input.database.clone());
     let conn = establish_connection(input.database);
-
     let conn = Arc::new(Mutex::new(conn));
+    let mut processes: Vec<ProcessLogs> = Vec::new();
 
-    let handlers = input
-        .data_sources
-        .into_iter()
-        .map(|data_source| ProcessLogs {
+    for data_source in input.data_sources {
+        let process = ProcessLogs {
             start_block: data_source.start_block,
             step: data_source.step,
             address: data_source.address.clone(),
             handler: data_source.handler,
-            provider: rpc_manager.get(data_source.rpc_url),
+            provider: rpc_manager.get(data_source.rpc_url).await,
             conn: Arc::clone(&conn),
-        })
-        .collect::<Vec<_>>();
+            dynamic_handler_manager: input.dynamic_handler_manager.clone(),
+        };
 
-    let join_handles = handlers
+        processes.push(process);
+    }
+
+    let join_handles = processes
         .into_iter()
         .map(|process| {
             tokio::spawn(async move {

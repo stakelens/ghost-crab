@@ -2,9 +2,9 @@ use alloy::providers::ProviderBuilder;
 use alloy::providers::RootProvider;
 use alloy::transports::http::{Client, Http};
 use once_cell::sync::Lazy;
+use tokio::sync::Mutex;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 use super::rpc_proxy::RpcWithCache;
 
@@ -23,7 +23,7 @@ impl RPCManager {
         }
     }
 
-    pub fn get(&mut self, rpc_url: String) -> RootProvider<Http<Client>> {
+    pub async fn get(&mut self, rpc_url: String) -> RootProvider<Http<Client>> {
         let result = self.rpcs.get(&rpc_url);
 
         match result {
@@ -31,7 +31,7 @@ impl RPCManager {
                 return value.clone();
             }
             None => {
-                let mut current_port = CURRENT_PORT.lock().unwrap();
+                let mut current_port = CURRENT_PORT.lock().await;
                 let provider = ProviderBuilder::new().on_http(
                     format!("http://localhost:{}", current_port)
                         .parse()
