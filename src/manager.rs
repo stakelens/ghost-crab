@@ -4,8 +4,7 @@ use std::sync::Arc;
 
 pub struct Indexer {
     config: config::Config,
-    data_sources: Vec<DataSourceConfig>,
-    templates: DynamicHandlerManager,
+    data_sources: Vec<DataSourceConfig>
 }
 
 impl Indexer {
@@ -14,8 +13,7 @@ impl Indexer {
 
         return Indexer {
             config: config.clone(),
-            data_sources: Vec::new(),
-            templates: DynamicHandlerManager::new(config),
+            data_sources: Vec::new()
         };
     }
 
@@ -42,45 +40,7 @@ impl Indexer {
         run(RunInput {
             data_sources: self.data_sources,
             database,
-            dynamic_handler_manager: self.templates.clone(),
         })
         .await;
-    }
-}
-
-#[derive(Clone)]
-pub struct DynamicHandlerManager {
-    config: config::Config,
-}
-
-impl DynamicHandlerManager {
-    pub fn new(config: config::Config) -> Self {
-        DynamicHandlerManager { config }
-    }
-
-    pub fn start(
-        &self,
-        handler: Box<(dyn Handler + Send + Sync)>,
-        address: &str,
-        start_block: u64,
-    ) {
-        let source = self.config.templates.get(&handler.get_source()).unwrap();
-        let rpc_url = self.config.networks.get(&source.network).unwrap();
-
-        let run_input = RunInput {
-            database: self.config.database.clone(),
-            data_sources: vec![DataSourceConfig {
-                start_block: start_block,
-                step: 10_000,
-                address: String::from(address),
-                handler: Arc::new(handler),
-                rpc_url: rpc_url.clone(),
-            }],
-            dynamic_handler_manager: self.clone(),
-        };
-
-        tokio::spawn(async move {
-            run(run_input).await;
-        });
     }
 }

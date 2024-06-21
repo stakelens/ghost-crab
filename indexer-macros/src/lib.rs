@@ -124,6 +124,29 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
+        impl #fn_name {
+            fn start(address: &str, start_block: u64) {
+                let config = config::load();
+                let source = config.templates.get(#data_source).unwrap();
+                let rpc_url = config.networks.get(&source.network).unwrap();
+
+                let run_input = RunInput {
+                    database: config.database.clone(),
+                    data_sources: vec![DataSourceConfig {
+                        start_block: start_block,
+                        step: 10_000,
+                        address: String::from(address),
+                        handler: Arc::new(#fn_name::new()),
+                        rpc_url: rpc_url.clone(),
+                    }],
+                };
+
+                tokio::spawn(async move {
+                    run(run_input).await;
+                });
+            }
+        }
+
         #[async_trait]
         impl Handler for #fn_name {
             async fn handle(&self, #fn_args) {

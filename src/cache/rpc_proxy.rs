@@ -65,7 +65,7 @@ impl RpcWithCache {
     }
 }
 
-async fn handler(
+pub async fn handler(
     request: Request<hyper::body::Incoming>,
     rpc_url: Arc<String>,
     connection: Arc<Mutex<PgConnection>>,

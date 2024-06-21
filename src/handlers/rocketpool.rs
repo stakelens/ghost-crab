@@ -2,11 +2,16 @@ use crate::indexer::{Context, Handler};
 use alloy::{sol, sol_types::SolEvent};
 use async_trait::async_trait;
 use indexer_macros::handler;
+use crate::config;
+use std::sync::Arc;
+use crate::indexer::run;
+use crate::indexer::RunInput;
+use crate::indexer::DataSourceConfig;
 
 #[handler(ETHVault.MinipoolCreated)]
 async fn SimpleHandler(context: Context) {
     println!("");
-    println!("Inside a simple handler!");
+    println!("Inside a simple handler");
     println!("Processing log: {:?}", context.log);
     println!("");
 }
@@ -20,11 +25,13 @@ async fn MinipoolCreatedHandler(ctx: Context) {
             return;
         }
 
-        ctx.dynamic.start(
-            SimpleHandler::new(),
-            "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
-            20106719,
-        );
+        // ctx.dynamic.start(
+        //     SimpleHandler::new(),
+        //     "0x6d010c43d4e96d74c422f2e27370af48711b49bf",
+        //     20106719,
+        // );
+
+        SimpleHandler::start("0x6d010c43d4e96d74c422f2e27370af48711b49bf", 20106719);
     }
 }
 
