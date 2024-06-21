@@ -104,6 +104,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let parsed = parse_macro_input!(input as ItemFn);
     let fn_name = parsed.sig.ident;
     let fn_body = parsed.block;
+    let fn_args = parsed.sig.inputs;
     let contract_name = format_ident!("{}Contract", fn_name);
 
     let data_source = Literal::string(&name);
@@ -125,7 +126,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
         #[async_trait]
         impl Handler for #fn_name {
-            async fn handle(&self, context: Context) {
+            async fn handle(&self, #fn_args) {
                 #fn_body
             }
 
