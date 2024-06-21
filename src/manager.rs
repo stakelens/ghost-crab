@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 pub struct Indexer {
     config: config::Config,
-    data_sources: Vec<DataSourceConfig>
+    data_sources: Vec<DataSourceConfig>,
 }
 
 impl Indexer {
@@ -13,7 +13,7 @@ impl Indexer {
 
         return Indexer {
             config: config.clone(),
-            data_sources: Vec::new()
+            data_sources: Vec::new(),
         };
     }
 
