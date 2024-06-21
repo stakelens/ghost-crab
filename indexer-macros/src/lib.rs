@@ -105,6 +105,33 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
     let data_source = Literal::string(&name);
 
+    let data_source_init = if is_template {
+        quote! {}
+    } else {
+        quote! {
+            pub fn init() {
+                let config = config::load();
+                let source = config.data_sources.get(#data_source).unwrap();
+                let rpc_url = config.networks.get(&source.network).unwrap();
+
+                let run_input = RunInput {
+                    database: config.database.clone(),
+                    data_sources: vec![DataSourceConfig {
+                        start_block: source.start_block,
+                        step: 10_000,
+                        address: source.address.clone(),
+                        handler: Arc::new(#fn_name::new()),
+                        rpc_url: rpc_url.clone(),
+                    }],
+                };
+
+                tokio::spawn(async move {
+                    run(run_input).await;
+                });
+            }
+        }
+    };
+
     TokenStream::from(quote! {
         sol!(
             #[sol(rpc)]
@@ -121,7 +148,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         impl #fn_name {
-            fn start(address: &str, start_block: u64) {
+            pub fn start(address: &str, start_block: u64) {
                 let config = config::load();
                 let source = config.templates.get(#data_source).unwrap();
                 let rpc_url = config.networks.get(&source.network).unwrap();
@@ -141,6 +168,8 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
                     run(run_input).await;
                 });
             }
+
+            #data_source_init
         }
 
         #[async_trait]
