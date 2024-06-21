@@ -12,6 +12,13 @@ use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+struct Template {
+    abi: String,
+    network: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct DataSource {
     abi: String,
     address: String,
@@ -22,7 +29,8 @@ struct DataSource {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Config {
-    sources: HashMap<String, DataSource>,
+    data_sources: HashMap<String, DataSource>,
+    templates: HashMap<String, Template>,
     networks: HashMap<String, String>,
 }
 //
@@ -32,10 +40,10 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let metadata_string = metadata.to_string();
     let mut metadata_split = metadata_string.split(".");
 
-    let source_name = metadata_split.next();
+    let name = metadata_split.next();
     let event_name = metadata_split.next();
 
-    if source_name.is_none() {
+    if name.is_none() {
         panic!("The source is missing");
     }
 
@@ -49,13 +57,13 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
         panic!("The metadata has too many values");
     }
 
-    let source_name = source_name.unwrap();
-    let source_name = String::from(source_name.trim());
+    let name = name.unwrap();
+    let name = String::from(name.trim());
 
     let event_name = event_name.unwrap();
     let event_name = String::from(event_name.trim());
 
-    if source_name.len() == 0 {
+    if name.len() == 0 {
         panic!("The source is empty");
     }
 
@@ -66,17 +74,24 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let content = fs::read_to_string("./config.json");
 
     let mut abi = String::new();
+    let mut is_template = false;
 
     match content {
         Ok(content) => {
             let config: Config = serde_json::from_str(&content).unwrap();
-            let source = config.sources.get(&source_name);
+            let source_data_source = config.data_sources.get(&name);
+            let source_template = config.templates.get(&name);
 
-            if source.is_none() {
-                panic!("Source '{}' not found.", source_name);
+            if source_data_source.is_none() && source_template.is_none() {
+                panic!("Source '{}' not found.", name);
             }
 
-            abi = source.unwrap().abi.clone()
+            if source_data_source.is_some() {
+                abi = source_data_source.unwrap().abi.clone()
+            } else {
+                is_template = true;
+                abi = source_template.unwrap().abi.clone()
+            }
         }
         Err(err) => {
             panic!("Error reading the config.json file: {}", err);
@@ -91,7 +106,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let fn_body = parsed.block;
     let contract_name = format_ident!("{}Contract", fn_name);
 
-    let data_source = Literal::string(&source_name);
+    let data_source = Literal::string(&name);
 
     TokenStream::from(quote! {
         sol!(
@@ -109,13 +124,17 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         #[async_trait]
-        impl Handleable for #fn_name {
+        impl Handler for #fn_name {
             async fn handle(&self, context: Context) {
                 #fn_body
             }
 
-            fn get_data_source(&self) -> String {
+            fn get_source(&self) -> String {
                 String::from(#data_source)
+            }
+
+            fn is_template(&self) -> bool {
+                #is_template
             }
 
             fn get_event_signature(&self) -> String {
