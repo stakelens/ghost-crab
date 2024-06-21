@@ -1285,6 +1285,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "ghost_crab"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "async-trait",
+ "blake3",
+ "bytes",
+ "diesel",
+ "dotenvy",
+ "http-body-util",
+ "hyper",
+ "hyper-tls",
+ "hyper-util",
+ "indexer-macros",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "gimli"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1515,27 +1536,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "indexer"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "async-trait",
- "blake3",
- "bytes",
- "diesel",
- "dotenvy",
- "http-body-util",
- "hyper",
- "hyper-tls",
- "hyper-util",
- "indexer-macros",
- "once_cell",
- "serde",
- "serde_json",
- "tokio",
 ]
 
 [[package]]

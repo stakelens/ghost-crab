@@ -71,7 +71,8 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
         panic!("The event name is empty");
     }
 
-    let content = fs::read_to_string("./config.json");
+    let current_dir = std::env::current_dir().unwrap();
+    let content = fs::read_to_string(current_dir.join("config.json"));
 
     let mut abi = String::new();
     let mut is_template = false;

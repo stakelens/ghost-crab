@@ -31,12 +31,12 @@ pub struct Config {
 
 static CONFIG_CACHE: Lazy<Config> = Lazy::new(|| {
     dotenv().ok();
-
-    let config_string = fs::read_to_string("./config.json").unwrap();
+    let current_dir = env::current_dir().unwrap();
+    let config_string = fs::read_to_string(current_dir.join("config.json")).unwrap();
     let mut config: Config = serde_json::from_str(&config_string).unwrap();
 
     if config.database.starts_with("$") {
-        config.database = env::var(&config.database[1..]).unwrap()
+        config.database = env::var(&config.database[1..]).unwrap();
     }
 
     config.networks.iter_mut().for_each(|(_key, value)| {

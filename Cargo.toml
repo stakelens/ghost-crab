@@ -1,7 +1,11 @@
 [package]
-name = "indexer"
+name = "ghost_crab"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+name = "ghost_crab"
+path = "src/lib.rs"
 
 [dependencies]
 alloy = { git = "https://github.com/alloy-rs/alloy", version = "0.1.0", features = [
