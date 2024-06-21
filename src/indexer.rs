@@ -1,4 +1,4 @@
-use crate::cache;
+use crate::cache::manager::RPC_MANAGER;
 use alloy::primitives::Address;
 use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::{Filter, Log};
@@ -109,7 +109,6 @@ pub struct RunInput {
 }
 
 pub async fn run(input: RunInput) {
-    let mut rpc_manager = cache::manager::RPCManager::new();
     // let conn = establish_connection(input.database);
     // let conn = Arc::new(Mutex::new(conn));
     let mut processes: Vec<ProcessLogs> = Vec::new();
@@ -120,8 +119,7 @@ pub async fn run(input: RunInput) {
             step: data_source.step,
             address: data_source.address.clone(),
             handler: data_source.handler,
-            provider: rpc_manager.get(data_source.rpc_url).await,
-            // conn: Arc::clone(&conn),
+            provider: RPC_MANAGER.lock().await.get(data_source.rpc_url).await, // conn: Arc::clone(&conn),
         };
 
         processes.push(process);

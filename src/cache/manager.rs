@@ -9,12 +9,14 @@ use tokio::sync::Mutex;
 
 use super::rpc_proxy::RpcWithCache;
 
+pub static RPC_MANAGER: Lazy<Arc<Mutex<RPCManager>>> =
+    Lazy::new(|| Arc::new(Mutex::new(RPCManager::new())));
+
 pub struct RPCManager {
+    current_port: u16,
     cache: Arc<DB>,
     rpcs: HashMap<String, RootProvider<Http<Client>>>,
 }
-
-static CURRENT_PORT: Lazy<Arc<Mutex<u16>>> = Lazy::new(|| Arc::new(Mutex::new(3000)));
 
 impl RPCManager {
     pub fn new() -> Self {
@@ -24,6 +26,7 @@ impl RPCManager {
         RPCManager {
             rpcs: HashMap::new(),
             cache,
+            current_port: 3000,
         }
     }
 
@@ -35,24 +38,22 @@ impl RPCManager {
                 return value.clone();
             }
             None => {
-                let mut current_port = CURRENT_PORT.lock().await;
                 let provider = ProviderBuilder::new().on_http(
-                    format!("http://localhost:{}", current_port)
+                    format!("http://localhost:{}", self.current_port)
                         .parse()
                         .unwrap(),
                 );
 
                 self.rpcs.insert(rpc_url.clone(), provider.clone());
 
-                // Start the Ingester service
                 let rpc_with_cache =
-                    RpcWithCache::new(Arc::clone(&self.cache), rpc_url.clone(), *current_port);
+                    RpcWithCache::new(Arc::clone(&self.cache), rpc_url.clone(), self.current_port);
 
                 tokio::spawn(async move {
                     rpc_with_cache.run().await;
                 });
 
-                *current_port = *current_port + 1;
+                self.current_port = self.current_port + 1;
                 return provider;
             }
         }
