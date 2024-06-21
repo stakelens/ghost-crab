@@ -1,4 +1,5 @@
 use dotenvy::dotenv;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::{env, fs};
@@ -28,7 +29,7 @@ pub struct Config {
     pub networks: HashMap<String, String>,
 }
 
-pub fn load() -> Config {
+static CONFIG_CACHE: Lazy<Config> = Lazy::new(|| {
     dotenv().ok();
 
     let config_string = fs::read_to_string("./config.json").unwrap();
@@ -45,4 +46,8 @@ pub fn load() -> Config {
     });
 
     config
+});
+
+pub fn load() -> Config {
+    return CONFIG_CACHE.clone();
 }
