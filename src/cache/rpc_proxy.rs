@@ -23,7 +23,10 @@ pub struct RpcWithCache {
 }
 
 impl RpcWithCache {
-    pub fn new(cache: Arc<DB>, rpc_url: String, port: u16) -> Self {
+    pub fn new(network: String, rpc_url: String, port: u16) -> Self {
+        let current_dir = std::env::current_dir().unwrap();
+        let cache = Arc::new(DB::open_default(current_dir.join("cache").join(network)).unwrap());
+
         Self {
             rpc_url: Arc::new(rpc_url),
             cache,
@@ -69,9 +72,7 @@ async fn handler(
     let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
     let request_received = request.collect().await.unwrap().to_bytes();
 
-    let rpc_url_bytes = Bytes::from(rpc_url.to_string());
-    let request_hash =
-        blake3::hash(&[request_received.clone(), rpc_url_bytes].concat()).to_string();
+    let request_hash = blake3::hash(&request_received).to_string();
 
     if let Some(data) = db.get(&request_hash).unwrap() {
         return Ok(Response::new(Full::new(Bytes::from(data))));

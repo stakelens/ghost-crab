@@ -1,39 +1,36 @@
+use super::rpc_proxy::RpcWithCache;
+use crate::config;
 use alloy::providers::ProviderBuilder;
 use alloy::providers::RootProvider;
 use alloy::transports::http::{Client, Http};
 use once_cell::sync::Lazy;
-use rocksdb::DB;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
-use super::rpc_proxy::RpcWithCache;
 
 pub static RPC_MANAGER: Lazy<Arc<Mutex<RPCManager>>> =
     Lazy::new(|| Arc::new(Mutex::new(RPCManager::new())));
 
 pub struct RPCManager {
     current_port: u16,
-    cache: Arc<DB>,
     rpcs: HashMap<String, RootProvider<Http<Client>>>,
+    config: config::Config,
 }
 
 impl RPCManager {
     pub fn new() -> Self {
-        let current_dir = std::env::current_dir().unwrap();
-        let cache = Arc::new(DB::open_default(current_dir.join("cache")).unwrap());
-
         RPCManager {
             rpcs: HashMap::new(),
-            cache,
             current_port: 3000,
+            config: config::load(),
         }
     }
 
-    pub async fn get(&mut self, rpc_url: String) -> RootProvider<Http<Client>> {
-        let result = self.rpcs.get(&rpc_url);
+    pub async fn get(&mut self, network: String) -> RootProvider<Http<Client>> {
+        let rpc_url = self.config.networks.get(&network).unwrap();
+        let provider = self.rpcs.get(rpc_url);
 
-        match result {
+        match provider {
             Some(value) => {
                 return value.clone();
             }
@@ -45,9 +42,7 @@ impl RPCManager {
                 );
 
                 self.rpcs.insert(rpc_url.clone(), provider.clone());
-
-                let rpc_with_cache =
-                    RpcWithCache::new(Arc::clone(&self.cache), rpc_url.clone(), self.current_port);
+                let rpc_with_cache = RpcWithCache::new(network, rpc_url.clone(), self.current_port);
 
                 tokio::spawn(async move {
                     rpc_with_cache.run().await;

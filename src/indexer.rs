@@ -100,7 +100,7 @@ pub struct DataSourceConfig {
     pub step: u64,
     pub address: String,
     pub handler: Arc<Box<(dyn Handler + Send + Sync)>>,
-    pub rpc_url: String,
+    pub network: String,
 }
 
 pub struct RunInput {
@@ -119,7 +119,7 @@ pub async fn run(input: RunInput) {
             step: data_source.step,
             address: data_source.address.clone(),
             handler: data_source.handler,
-            provider: RPC_MANAGER.lock().await.get(data_source.rpc_url).await, // conn: Arc::clone(&conn),
+            provider: RPC_MANAGER.lock().await.get(data_source.network).await, // conn: Arc::clone(&conn),
         };
 
         processes.push(process);

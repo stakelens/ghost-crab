@@ -112,7 +112,6 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
             pub fn init() {
                 let config = config::load();
                 let source = config.data_sources.get(#data_source).unwrap();
-                let rpc_url = config.networks.get(&source.network).unwrap();
 
                 let run_input = RunInput {
                     database: config.database.clone(),
@@ -121,7 +120,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
                         step: 10_000,
                         address: source.address.clone(),
                         handler: Arc::new(#fn_name::new()),
-                        rpc_url: rpc_url.clone(),
+                        network: source.network.clone(),
                     }],
                 };
 
@@ -151,7 +150,6 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
             pub fn start(address: &str, start_block: u64) {
                 let config = config::load();
                 let source = config.templates.get(#data_source).unwrap();
-                let rpc_url = config.networks.get(&source.network).unwrap();
 
                 let run_input = RunInput {
                     database: config.database.clone(),
@@ -160,7 +158,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
                         step: 10_000,
                         address: String::from(address),
                         handler: Arc::new(#fn_name::new()),
-                        rpc_url: rpc_url.clone(),
+                        network: source.network.clone()
                     }],
                 };
 

@@ -23,14 +23,13 @@ impl Indexer {
         }
 
         let source = self.config.data_sources.get(&handler.get_source()).unwrap();
-        let rpc_url = self.config.networks.get(&source.network).unwrap();
 
         self.data_sources.push(DataSourceConfig {
             start_block: source.start_block,
-            step: 10_000,
             address: source.address.clone(),
+            network: source.network.clone(),
+            step: 10_000,
             handler: Arc::new(handler),
-            rpc_url: rpc_url.clone(),
         });
     }
 
