@@ -1,6 +1,5 @@
 pub use crate::indexer::run;
-pub use crate::indexer::DataSourceConfig;
-pub use crate::indexer::RunInput;
+pub use crate::indexer::HandlerConfig;
 pub use crate::indexer::{Context, Handler};
 pub use alloy::{sol, sol_types::SolEvent};
 pub use async_trait::async_trait;

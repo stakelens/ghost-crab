@@ -9,8 +9,9 @@ use std::sync::Arc;
 pub struct Context {
     pub log: Log,
     pub provider: RootProvider<Http<Client>>,
-    // pub conn: Arc<Mutex<PgConnection>>,
 }
+
+pub type HandlerFn = Arc<Box<(dyn Handler + Send + Sync)>>;
 
 #[async_trait]
 pub trait Handler {
@@ -24,9 +25,8 @@ pub struct ProcessLogs {
     pub start_block: u64,
     pub step: u64,
     pub address: String,
-    pub handler: Arc<Box<(dyn Handler + Send + Sync)>>,
+    pub handler: HandlerFn,
     pub provider: RootProvider<Http<Client>>,
-    // pub conn: Arc<Mutex<PgConnection>>,
 }
 
 pub async fn process_log(
@@ -36,7 +36,6 @@ pub async fn process_log(
         address,
         handler,
         provider,
-        // conn,
     }: ProcessLogs,
 ) {
     let mut current_block = start_block;
@@ -71,18 +70,11 @@ pub async fn process_log(
         let handlers = logs
             .into_iter()
             .map(|log| {
-                // let conn = Arc::clone(&conn);
-                let handler = Arc::clone(&handler);
+                let handler = handler.clone();
                 let provider = provider.clone();
 
                 tokio::spawn(async move {
-                    handler
-                        .handle(Context {
-                            log,
-                            provider,
-                            // conn,
-                        })
-                        .await;
+                    handler.handle(Context { log, provider }).await;
                 })
             })
             .collect::<Vec<_>>();
@@ -95,31 +87,25 @@ pub async fn process_log(
     }
 }
 
-pub struct DataSourceConfig {
+#[derive(Clone)]
+pub struct HandlerConfig {
     pub start_block: u64,
     pub step: u64,
     pub address: String,
-    pub handler: Arc<Box<(dyn Handler + Send + Sync)>>,
+    pub handler: HandlerFn,
     pub network: String,
 }
 
-pub struct RunInput {
-    pub database: String,
-    pub data_sources: Vec<DataSourceConfig>,
-}
-
-pub async fn run(input: RunInput) {
-    // let conn = establish_connection(input.database);
-    // let conn = Arc::new(Mutex::new(conn));
+pub async fn run(handlers: Vec<HandlerConfig>) {
     let mut processes: Vec<ProcessLogs> = Vec::new();
 
-    for data_source in input.data_sources {
+    for data_source in handlers {
         let process = ProcessLogs {
             start_block: data_source.start_block,
             step: data_source.step,
             address: data_source.address.clone(),
             handler: data_source.handler,
-            provider: RPC_MANAGER.lock().await.get(data_source.network).await, // conn: Arc::clone(&conn),
+            provider: RPC_MANAGER.lock().await.get(data_source.network).await,
         };
 
         processes.push(process);

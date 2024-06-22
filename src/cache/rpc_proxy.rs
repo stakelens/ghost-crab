@@ -41,7 +41,6 @@ impl RpcWithCache {
         loop {
             let (tcp, _) = listener.accept().await.unwrap();
             let io = TokioIo::new(tcp);
-
             let db = Arc::clone(&self.cache);
             let rpc_url = Arc::clone(&self.rpc_url);
 
