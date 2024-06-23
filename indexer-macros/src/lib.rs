@@ -113,7 +113,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
                 let config = config::load();
                 let source = config.data_sources.get(#data_source).unwrap();
 
-                let run_input = vec![DataSourceConfig {
+                let run_input = vec![HandlerConfig {
                     start_block: source.start_block,
                     step: 10_000,
                     address: source.address.clone(),
@@ -148,7 +148,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
                 let config = config::load();
                 let source = config.templates.get(#data_source).unwrap();
 
-                let run_input = vec![DataSourceConfig {
+                let run_input = vec![HandlerConfig {
                     start_block: start_block,
                     step: 10_000,
                     address: String::from(address),
