@@ -116,8 +116,8 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
         pub struct #fn_name {}
 
         impl #fn_name {
-            pub fn new() -> Box<#fn_name> {
-                Box::new(#fn_name {})
+            pub fn new() -> Arc<Box<(dyn Handler + Send + Sync)>> {
+                Arc::new(Box::new(#fn_name {}))
             }
         }
 

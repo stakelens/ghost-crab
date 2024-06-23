@@ -4,9 +4,12 @@ use alloy::transports::http::{Client, Http};
 use async_trait::async_trait;
 use std::sync::Arc;
 
+use crate::indexer::TemplateManager;
+
 pub struct Context {
     pub log: Log,
     pub provider: RootProvider<Http<Client>>,
+    pub templates: TemplateManager,
 }
 
 pub type HandleInstance = Arc<Box<(dyn Handler + Send + Sync)>>;
@@ -26,4 +29,5 @@ pub struct HandlerConfig {
     pub address: String,
     pub handler: HandleInstance,
     pub provider: RootProvider<Http<Client>>,
+    pub templates: TemplateManager,
 }

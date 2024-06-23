@@ -1,21 +1,68 @@
+use tokio::sync::mpsc::{self, Receiver, Sender};
+
 use crate::cache::manager::RPC_MANAGER;
 use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
 use crate::process_logs::process_logs;
 
 #[derive(Clone)]
+pub struct TemplateManager {
+    config: config::Config,
+    tx: Sender<HandlerConfig>,
+}
+
+pub struct Template {
+    pub start_block: u64,
+    pub address: String,
+    pub handler: HandleInstance,
+}
+
+impl TemplateManager {
+    pub async fn start(&self, template: Template) {
+        let source = self
+            .config
+            .templates
+            .get(&template.handler.get_source())
+            .unwrap();
+
+        let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
+
+        self.tx
+            .send(HandlerConfig {
+                start_block: template.start_block,
+                address: template.address.clone(),
+                step: 10_000,
+                provider,
+                handler: template.handler,
+                templates: self.clone(),
+            })
+            .await
+            .unwrap();
+    }
+}
+
 pub struct Indexer {
     config: config::Config,
     handlers: Vec<HandlerConfig>,
+    rx: Receiver<HandlerConfig>,
+    templates: TemplateManager,
 }
 
 impl Indexer {
     pub fn new() -> Indexer {
         let config = config::load();
+        let (tx, rx) = mpsc::channel::<HandlerConfig>(1);
+
+        let templates = TemplateManager {
+            config: config.clone(),
+            tx,
+        };
 
         return Indexer {
             config: config.clone(),
             handlers: Vec::new(),
+            rx,
+            templates,
         };
     }
 
@@ -33,22 +80,22 @@ impl Indexer {
             step: 10_000,
             provider,
             handler,
+            templates: self.templates.clone(),
         });
     }
 
-    pub async fn start(self) {
-        let join_handles = self
-            .handlers
-            .into_iter()
-            .map(|process| {
-                tokio::spawn(async move {
-                    process_logs(process).await;
-                })
-            })
-            .collect::<Vec<_>>();
+    pub async fn start(mut self) {
+        for handler in self.handlers {
+            tokio::spawn(async move {
+                process_logs(handler).await;
+            });
+        }
 
-        for handle in join_handles {
-            handle.await.unwrap();
+        // For dynamic sources
+        while let Some(handler) = self.rx.recv().await {
+            tokio::spawn(async move {
+                process_logs(handler).await;
+            });
         }
     }
 }

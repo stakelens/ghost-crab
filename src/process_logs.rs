@@ -11,6 +11,7 @@ pub async fn process_logs(
         address,
         handler,
         provider,
+        templates,
     }: HandlerConfig,
 ) {
     let mut current_block = start_block;
@@ -47,9 +48,16 @@ pub async fn process_logs(
             .map(|log| {
                 let handler = handler.clone();
                 let provider = provider.clone();
+                let templates = templates.clone();
 
                 tokio::spawn(async move {
-                    handler.handle(Context { log, provider }).await;
+                    handler
+                        .handle(Context {
+                            log,
+                            provider,
+                            templates,
+                        })
+                        .await;
                 })
             })
             .collect::<Vec<_>>();

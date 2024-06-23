@@ -10,3 +10,4 @@ pub use crate::cache;
 pub use crate::config;
 pub use crate::process_logs;
 pub use crate::indexer;
+pub use crate::indexer::Template;
