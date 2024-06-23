@@ -70,7 +70,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let content = fs::read_to_string(current_dir.join("config.json"));
 
     let abi;
-    let mut is_template = false;
+    let is_template;
 
     match content {
         Ok(content) => {
@@ -83,6 +83,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             if source_data_source.is_some() {
+                is_template = false;
                 abi = source_data_source.unwrap().abi.clone()
             } else {
                 is_template = true;
@@ -105,29 +106,6 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
     let data_source = Literal::string(&name);
 
-    let data_source_init = if is_template {
-        quote! {}
-    } else {
-        quote! {
-            pub fn init() {
-                let config = config::load();
-                let source = config.data_sources.get(#data_source).unwrap();
-
-                let run_input = vec![HandlerConfig {
-                    start_block: source.start_block,
-                    step: 10_000,
-                    address: source.address.clone(),
-                    handler: Arc::new(#fn_name::new()),
-                    network: source.network.clone(),
-                }];
-
-                tokio::spawn(async move {
-                    run(run_input).await;
-                });
-            }
-        }
-    };
-
     TokenStream::from(quote! {
         sol!(
             #[sol(rpc)]
@@ -141,27 +119,6 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
             pub fn new() -> Box<#fn_name> {
                 Box::new(#fn_name {})
             }
-        }
-
-        impl #fn_name {
-            pub fn start(address: &str, start_block: u64) {
-                let config = config::load();
-                let source = config.templates.get(#data_source).unwrap();
-
-                let run_input = vec![HandlerConfig {
-                    start_block: start_block,
-                    step: 10_000,
-                    address: String::from(address),
-                    handler: Arc::new(#fn_name::new()),
-                    network: source.network.clone()
-                }];
-
-                tokio::spawn(async move {
-                    run(run_input).await;
-                });
-            }
-
-            #data_source_init
         }
 
         #[async_trait]
