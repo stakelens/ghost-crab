@@ -1,7 +1,8 @@
 pub mod cache;
 pub mod config;
+pub mod process_logs;
 pub mod indexer;
-pub mod manager;
 pub mod prelude;
+pub mod handler;
 
-pub use manager::Indexer;
+pub use indexer::Indexer;
