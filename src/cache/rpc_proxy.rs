@@ -62,6 +62,20 @@ impl RpcWithCache {
     }
 }
 
+fn divide_request_by_id(input: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
+    const ID_FIELD: &[u8; 5] = b"\"id\":";
+    let id_field_index = input.windows(ID_FIELD.len()).position(|x| x == ID_FIELD)?;
+
+    let value_start = id_field_index + ID_FIELD.len();
+    let value_end = input[value_start..].iter().position(|&x| x == b',')?;
+
+    return Some((
+        &input[..value_start],
+        &input[value_start..value_start + value_end],
+        &input[value_start + value_end..],
+    ));
+}
+
 async fn handler(
     request: Request<hyper::body::Incoming>,
     rpc_url: Arc<String>,
@@ -71,10 +85,14 @@ async fn handler(
     let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
     let request_received = request.collect().await.unwrap().to_bytes();
 
+    // Sets the JSON RPC id to zero
+    let (start, _value, end) = divide_request_by_id(&request_received).unwrap();
+    let request_received = Bytes::from([start, b"0", end].concat());
+
     let request_hash = blake3::hash(&request_received).to_string();
 
-    if let Some(data) = db.get(&request_hash).unwrap() {
-        return Ok(Response::new(Full::new(Bytes::from(data))));
+    if let Ok(Some(value)) = db.get(&request_hash) {
+        return Ok(Response::new(Full::new(Bytes::from(value))));
     }
 
     let rpc_quest = hyper::Request::builder()

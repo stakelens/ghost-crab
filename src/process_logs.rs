@@ -43,27 +43,20 @@ pub async fn process_logs(
 
         let logs = provider.get_logs(&filter).await.unwrap();
 
-        let handlers = logs
-            .into_iter()
-            .map(|log| {
-                let handler = handler.clone();
-                let provider = provider.clone();
-                let templates = templates.clone();
+        for log in logs {
+            let handler = handler.clone();
+            let provider = provider.clone();
+            let templates = templates.clone();
 
-                tokio::spawn(async move {
-                    handler
-                        .handle(Context {
-                            log,
-                            provider,
-                            templates,
-                        })
-                        .await;
-                })
-            })
-            .collect::<Vec<_>>();
-
-        for handle in handlers {
-            handle.await.unwrap();
+            tokio::spawn(async move {
+                handler
+                    .handle(Context {
+                        log,
+                        provider,
+                        templates,
+                    })
+                    .await;
+            });
         }
 
         current_block = end_block;

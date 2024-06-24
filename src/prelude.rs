@@ -1,4 +1,5 @@
 pub use crate::handler::{Context, Handler, HandlerConfig};
+pub use alloy;
 pub use alloy::{sol, sol_types::SolEvent};
 pub use async_trait::async_trait;
 pub use indexer_macros::handler;
