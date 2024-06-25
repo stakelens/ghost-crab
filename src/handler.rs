@@ -8,7 +8,7 @@ use std::sync::Arc;
 pub struct Context {
     pub log: Log,
     pub provider: RootProvider<Http<Client>>,
-    pub templates: Arc<TemplateManager>,
+    pub templates: TemplateManager,
 }
 
 pub type HandleInstance = Arc<Box<(dyn Handler + Send + Sync)>>;
@@ -28,5 +28,5 @@ pub struct HandlerConfig {
     pub address: String,
     pub handler: HandleInstance,
     pub provider: RootProvider<Http<Client>>,
-    pub templates: Arc<TemplateManager>,
+    pub templates: TemplateManager,
 }
