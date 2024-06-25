@@ -21,7 +21,7 @@ impl RPCManager {
     pub fn new() -> Self {
         RPCManager {
             rpcs: HashMap::new(),
-            current_port: 3000,
+            current_port: 3001,
             config: config::load(),
         }
     }
