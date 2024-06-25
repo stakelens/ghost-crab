@@ -1,7 +1,45 @@
 use crate::handler::{Context, HandlerConfig};
 use alloy::primitives::Address;
-use alloy::providers::Provider;
+use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::Filter;
+use alloy::transports::http::{Client, Http};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+struct LatestBlockManager {
+    value: u64,
+    cache_duration_ms: u128,
+    last_fetch_ms: u128,
+    provider: RootProvider<Http<Client>>,
+}
+
+impl LatestBlockManager {
+    fn new(cache_duration_ms: u128, provider: RootProvider<Http<Client>>) -> Self {
+        return Self {
+            value: 0,
+            cache_duration_ms,
+            last_fetch_ms: 0,
+            provider,
+        };
+    }
+
+    async fn get(&mut self) -> u64 {
+        let now_ms = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+
+        if (now_ms - self.last_fetch_ms) < self.cache_duration_ms {
+            return self.value;
+        }
+
+        let result = self.provider.get_block_number().await.unwrap();
+        self.value = result;
+
+        self.last_fetch_ms = now_ms;
+
+        return result;
+    }
+}
 
 pub async fn process_logs(
     HandlerConfig {
@@ -17,9 +55,11 @@ pub async fn process_logs(
     let event_signature = handler.get_event_signature();
     let address = address.parse::<Address>().unwrap();
 
+    let mut block_manager = LatestBlockManager::new(1000, provider.clone());
+
     loop {
         let mut end_block = current_block + step;
-        let latest_block = provider.get_block_number().await.unwrap();
+        let latest_block = block_manager.get().await;
 
         if end_block > latest_block {
             end_block = latest_block;
