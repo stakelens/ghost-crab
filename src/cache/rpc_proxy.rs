@@ -85,7 +85,14 @@ fn divide_request_by_id(input: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     ));
 }
 
-const INVALID_WORDS: &[&[u8]] = &[b"eth_blockNumber", b"latest"];
+const INVALID_WORDS: &[&[u8]] = &[
+    b"eth_blockNumber",
+    b"earliest",
+    b"latest",
+    b"safe",
+    b"finalized",
+    b"pending",
+];
 
 #[inline]
 fn contains_invalid_word(input: &[u8]) -> bool {
