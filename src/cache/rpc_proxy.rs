@@ -85,6 +85,23 @@ fn divide_request_by_id(input: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     ));
 }
 
+const INVALID_WORDS: &[&[u8]] = &[b"eth_blockNumber", b"latest"];
+
+#[inline]
+fn contains_invalid_word(input: &[u8]) -> bool {
+    for search in INVALID_WORDS {
+        if input
+            .windows(search.len())
+            .position(|x| &x == search)
+            .is_some()
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 async fn handler(
     request: Request<hyper::body::Incoming>,
     rpc_url: Arc<String>,
@@ -92,6 +109,26 @@ async fn handler(
     client: Client<HttpsConnector<HttpConnector>, Full<Bytes>>,
 ) -> Result<Response<Full<Bytes>>, Infallible> {
     let request_received = request.collect().await.unwrap().to_bytes();
+
+    if contains_invalid_word(&request_received) {
+        let rpc_request = hyper::Request::builder()
+            .method("POST")
+            .uri(rpc_url.as_str())
+            .header("Content-Type", "application/json")
+            .body(Full::new(request_received.clone()))
+            .unwrap();
+
+        let rpc_response = client
+            .request(rpc_request)
+            .await
+            .unwrap()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
+
+        return Ok(Response::new(Full::new(rpc_response)));
+    }
 
     // Sets the JSON RPC id to zero
     let (start, _value, end) = divide_request_by_id(&request_received).unwrap();
@@ -103,7 +140,7 @@ async fn handler(
         return Ok(Response::new(Full::new(Bytes::from(value))));
     }
 
-    let rpc_quest = hyper::Request::builder()
+    let rpc_request = hyper::Request::builder()
         .method("POST")
         .uri(rpc_url.as_str())
         .header("Content-Type", "application/json")
@@ -111,7 +148,7 @@ async fn handler(
         .unwrap();
 
     let rpc_response = client
-        .request(rpc_quest)
+        .request(rpc_request)
         .await
         .unwrap()
         .collect()
