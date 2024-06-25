@@ -2,6 +2,7 @@ use crate::cache::manager::RPC_MANAGER;
 use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
 use crate::process_logs::process_logs;
+use crate::server::Server;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 #[derive(Clone)]
@@ -53,6 +54,9 @@ impl Indexer {
         let (tx, rx) = mpsc::channel::<HandlerConfig>(1);
 
         let templates = TemplateManager { tx };
+
+        let server = Server::new(3000);
+        server.start();
 
         return Indexer {
             config: config.clone(),
