@@ -99,9 +99,23 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let event_name = syn::Ident::new(&event_name, proc_macro2::Span::call_site());
 
     let parsed = parse_macro_input!(input as ItemFn);
-    let fn_name = parsed.sig.ident;
+    let fn_name = parsed.sig.ident.clone();
     let fn_body = parsed.block;
-    let fn_args = parsed.sig.inputs;
+    let fn_args = parsed.sig.inputs.clone();
+
+    let first_input = parsed.sig.inputs[0].clone();
+    let ctx;
+
+    match first_input {
+        syn::FnArg::Typed(arg) => match *arg.pat {
+            syn::Pat::Ident(arg) => {
+                ctx = arg.ident;
+            }
+            _ => panic!("Malformed handler function arguments"),
+        },
+        _ => panic!("Malformed handler function arguments"),
+    }
+
     let contract_name = format_ident!("{}Contract", fn_name);
 
     let data_source = Literal::string(&name);
@@ -113,7 +127,7 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
             #abi
         );
 
-        pub struct #fn_name {}
+        pub struct #fn_name;
 
         impl #fn_name {
             pub fn new() -> Arc<Box<(dyn Handler + Send + Sync)>> {
@@ -124,6 +138,13 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
         #[async_trait]
         impl Handler for #fn_name {
             async fn handle(&self, #fn_args) {
+                let decoded_log = #ctx
+                    .log
+                    .log_decode::<#contract_name::#event_name>()
+                    .unwrap();
+
+                let event = decoded_log.data();
+
                 #fn_body
             }
 
