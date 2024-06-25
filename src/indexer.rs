@@ -1,9 +1,9 @@
-use tokio::sync::mpsc::{self, Receiver, Sender};
-
 use crate::cache::manager::RPC_MANAGER;
 use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
 use crate::process_logs::process_logs;
+use std::sync::Arc;
+use tokio::sync::mpsc::{self, Receiver, Sender};
 
 #[derive(Clone)]
 pub struct TemplateManager {
@@ -34,7 +34,7 @@ impl TemplateManager {
                 step: 10_000,
                 provider,
                 handler: template.handler,
-                templates: self.clone(),
+                templates: Arc::new(self.clone()),
             })
             .await
             .unwrap();
@@ -45,7 +45,7 @@ pub struct Indexer {
     config: config::Config,
     handlers: Vec<HandlerConfig>,
     rx: Receiver<HandlerConfig>,
-    templates: TemplateManager,
+    templates: Arc<TemplateManager>,
 }
 
 impl Indexer {
@@ -62,7 +62,7 @@ impl Indexer {
             config: config.clone(),
             handlers: Vec::new(),
             rx,
-            templates,
+            templates: Arc::new(templates),
         };
     }
 
