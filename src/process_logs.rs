@@ -2,7 +2,6 @@ use crate::handler::{Context, HandlerConfig};
 use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::rpc::types::eth::Filter;
-use std::sync::Arc;
 
 pub async fn process_logs(
     HandlerConfig {
@@ -15,7 +14,6 @@ pub async fn process_logs(
     }: HandlerConfig,
 ) {
     let mut current_block = start_block;
-    let handler = Arc::new(handler);
     let event_signature = handler.get_event_signature();
     let address = address.parse::<Address>().unwrap();
 
