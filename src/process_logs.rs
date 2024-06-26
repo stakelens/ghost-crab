@@ -66,7 +66,6 @@ pub async fn process_logs(
         }
 
         if current_block >= end_block {
-            println!("Reached latest block: {}", current_block);
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
         }
