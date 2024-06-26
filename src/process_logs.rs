@@ -70,7 +70,12 @@ pub async fn process_logs(
             continue;
         }
 
-        println!("Processing logs from {} to {}", current_block, end_block);
+        let source = handler.get_source();
+
+        println!(
+            "[{}] Processing logs from {} to {}",
+            source, current_block, end_block
+        );
 
         let filter = Filter::new()
             .address(address)
