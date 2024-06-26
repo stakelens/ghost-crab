@@ -3,6 +3,7 @@ use alloy::primitives::Address;
 use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::Filter;
 use alloy::transports::http::{Client, Http};
+use serde::Deserialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 struct LatestBlockManager {
@@ -41,6 +42,13 @@ impl LatestBlockManager {
     }
 }
 
+#[derive(Clone, Copy, Deserialize, Debug)]
+#[serde(rename_all="lowercase")]
+pub enum ExecutionMode {
+    Parallel,
+    Serial,
+}
+
 pub async fn process_logs(
     HandlerConfig {
         start_block,
@@ -49,6 +57,7 @@ pub async fn process_logs(
         handler,
         provider,
         templates,
+        execution_mode,
     }: HandlerConfig,
 ) {
     let mut current_block = start_block;
@@ -85,20 +94,39 @@ pub async fn process_logs(
 
         let logs = provider.get_logs(&filter).await.unwrap();
 
-        for log in logs {
-            let handler = handler.clone();
-            let provider = provider.clone();
-            let templates = templates.clone();
+        match execution_mode {
+            ExecutionMode::Parallel => {
+                for log in logs {
+                    let handler = handler.clone();
+                    let provider = provider.clone();
+                    let templates = templates.clone();
 
-            tokio::spawn(async move {
-                handler
-                    .handle(Context {
-                        log,
-                        provider,
-                        templates,
-                    })
-                    .await;
-            });
+                    tokio::spawn(async move {
+                        handler
+                            .handle(Context {
+                                log,
+                                provider,
+                                templates,
+                            })
+                            .await;
+                    });
+                }
+            }
+            ExecutionMode::Serial => {
+                for log in logs {
+                    let templates = templates.clone();
+                    let provider = provider.clone();
+                    let templates = templates.clone();
+
+                    handler
+                        .handle(Context {
+                            log,
+                            provider,
+                            templates,
+                        })
+                        .await;
+                }
+            }
         }
 
         current_block = end_block;

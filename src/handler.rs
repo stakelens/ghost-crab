@@ -1,4 +1,5 @@
 use crate::indexer::TemplateManager;
+use crate::process_logs::ExecutionMode;
 use alloy::providers::RootProvider;
 use alloy::rpc::types::eth::Log;
 use alloy::transports::http::{Client, Http};
@@ -29,4 +30,5 @@ pub struct HandlerConfig {
     pub handler: HandleInstance,
     pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
+    pub execution_mode: ExecutionMode
 }

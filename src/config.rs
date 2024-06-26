@@ -4,11 +4,14 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::{env, fs};
 
+use crate::process_logs::ExecutionMode;
+
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Template {
     pub abi: String,
     pub network: String,
+    pub execution_mode: Option<ExecutionMode>
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -18,6 +21,7 @@ pub struct DataSource {
     pub address: String,
     pub start_block: u64,
     pub network: String,
+    pub execution_mode: Option<ExecutionMode>
 }
 
 #[derive(Debug, Deserialize, Clone)]
