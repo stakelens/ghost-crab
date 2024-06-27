@@ -6,7 +6,7 @@ edition = "2021"
 license = "MIT"
 
 [lib]
-name = "ghost-crab"
+name = "ghost_crab"
 path = "src/lib.rs"
 
 [dependencies]
