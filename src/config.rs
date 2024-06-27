@@ -30,6 +30,7 @@ pub struct BlockHandler {
     pub start_block: u64,
     pub network: String,
     pub execution_mode: Option<ExecutionMode>,
+    pub step: u64,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -38,7 +39,7 @@ pub struct Config {
     pub data_sources: HashMap<String, DataSource>,
     pub templates: HashMap<String, Template>,
     pub networks: HashMap<String, String>,
-    pub block_handlers: HashMap<String, BlockHandler>
+    pub block_handlers: HashMap<String, BlockHandler>,
 }
 
 static CONFIG_CACHE: Lazy<Config> = Lazy::new(|| {

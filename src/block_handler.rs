@@ -28,6 +28,7 @@ pub struct BlockConfig {
     pub handler: BlockHandlerInstance,
     pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
+    pub step: u64,
     pub execution_mode: ExecutionMode,
 }
 
@@ -37,6 +38,7 @@ pub async fn process_logs_block(
         handler,
         provider,
         templates,
+        step,
         execution_mode,
     }: BlockConfig,
 ) {
@@ -88,6 +90,6 @@ pub async fn process_logs_block(
             }
         }
 
-        current_block = current_block + 1;
+        current_block = current_block + step;
     }
 }

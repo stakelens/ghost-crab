@@ -100,13 +100,13 @@ impl Indexer {
 
         let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
         let execution_mode = source.execution_mode.unwrap_or(ExecutionMode::Parallel);
-        let start_block = source.start_block;
 
         self.block_handlers.push(BlockConfig {
-            start_block,
+            start_block: source.start_block,
             handler,
             provider,
             templates: self.templates.clone(),
+            step: source.step,
             execution_mode,
         });
     }
