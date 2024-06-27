@@ -6,8 +6,8 @@ pub use alloy::{
     sol_types::{SolEvent, SolEventInterface},
 };
 pub use async_trait::async_trait;
-pub use indexer_macros::block_handler;
-pub use indexer_macros::handler;
+pub use ghost_crab_macros::block_handler;
+pub use ghost_crab_macros::handler;
 pub use std::sync::Arc;
 pub use tokio;
 

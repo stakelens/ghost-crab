@@ -1,4 +1,5 @@
 [lib]
+name = "ghost_crab_macros"
 proc-macro = true
 
 [package]
