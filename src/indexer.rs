@@ -71,7 +71,7 @@ impl Indexer {
         };
     }
 
-    pub async fn load(&mut self, handler: HandleInstance) {
+    pub async fn load_event_handler(&mut self, handler: HandleInstance) {
         if handler.is_template() {
             return;
         }
