@@ -1283,16 +1283,27 @@ dependencies = [
  "blake3",
  "bytes",
  "dotenvy",
+ "ghost-crab-macros",
  "http-body-util",
  "hyper",
  "hyper-tls",
  "hyper-util",
- "indexer-macros",
  "once_cell",
  "rocksdb",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "ghost-crab-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
+ "syn 2.0.68",
 ]
 
 [[package]]
@@ -1514,17 +1525,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "indexer-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "serde",
- "serde_json",
- "syn 2.0.68",
 ]
 
 [[package]]
