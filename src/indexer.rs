@@ -1,3 +1,4 @@
+use crate::block_handler::{process_logs_block, BlockConfig, BlockHandlerInstance};
 use crate::cache::manager::RPC_MANAGER;
 use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
@@ -46,6 +47,7 @@ impl TemplateManager {
 pub struct Indexer {
     config: config::Config,
     handlers: Vec<HandlerConfig>,
+    block_handlers: Vec<BlockConfig>,
     rx: Receiver<HandlerConfig>,
     templates: TemplateManager,
 }
@@ -63,6 +65,7 @@ impl Indexer {
         return Indexer {
             config: config.clone(),
             handlers: Vec::new(),
+            block_handlers: Vec::new(),
             rx,
             templates,
         };
@@ -88,7 +91,33 @@ impl Indexer {
         });
     }
 
+    pub async fn load_block_handler(&mut self, handler: BlockHandlerInstance) {
+        let source = self
+            .config
+            .block_handlers
+            .get(&handler.get_source())
+            .unwrap();
+
+        let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
+        let execution_mode = source.execution_mode.unwrap_or(ExecutionMode::Parallel);
+        let start_block = source.start_block;
+
+        self.block_handlers.push(BlockConfig {
+            start_block,
+            handler,
+            provider,
+            templates: self.templates.clone(),
+            execution_mode,
+        });
+    }
+
     pub async fn start(mut self) {
+        for block_handler in self.block_handlers {
+            tokio::spawn(async move {
+                process_logs_block(block_handler).await;
+            });
+        }
+
         for handler in self.handlers {
             tokio::spawn(async move {
                 process_logs(handler).await;

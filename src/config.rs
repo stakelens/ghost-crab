@@ -11,7 +11,7 @@ use crate::process_logs::ExecutionMode;
 pub struct Template {
     pub abi: String,
     pub network: String,
-    pub execution_mode: Option<ExecutionMode>
+    pub execution_mode: Option<ExecutionMode>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -21,7 +21,15 @@ pub struct DataSource {
     pub address: String,
     pub start_block: u64,
     pub network: String,
-    pub execution_mode: Option<ExecutionMode>
+    pub execution_mode: Option<ExecutionMode>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct BlockHandler {
+    pub start_block: u64,
+    pub network: String,
+    pub execution_mode: Option<ExecutionMode>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -30,6 +38,7 @@ pub struct Config {
     pub data_sources: HashMap<String, DataSource>,
     pub templates: HashMap<String, Template>,
     pub networks: HashMap<String, String>,
+    pub block_handlers: HashMap<String, BlockHandler>
 }
 
 static CONFIG_CACHE: Lazy<Config> = Lazy::new(|| {

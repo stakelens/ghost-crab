@@ -1,49 +1,12 @@
 use crate::handler::{Context, HandlerConfig};
+use crate::latest_block_manager::LatestBlockManager;
 use alloy::primitives::Address;
-use alloy::providers::{Provider, RootProvider};
+use alloy::providers::Provider;
 use alloy::rpc::types::eth::Filter;
-use alloy::transports::http::{Client, Http};
 use serde::Deserialize;
-use std::time::{SystemTime, UNIX_EPOCH};
-
-struct LatestBlockManager {
-    value: u64,
-    cache_duration_ms: u128,
-    last_fetch_ms: u128,
-    provider: RootProvider<Http<Client>>,
-}
-
-impl LatestBlockManager {
-    fn new(cache_duration_ms: u128, provider: RootProvider<Http<Client>>) -> Self {
-        return Self {
-            value: 0,
-            cache_duration_ms,
-            last_fetch_ms: 0,
-            provider,
-        };
-    }
-
-    async fn get(&mut self) -> u64 {
-        let now_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
-
-        if (now_ms - self.last_fetch_ms) < self.cache_duration_ms {
-            return self.value;
-        }
-
-        let result = self.provider.get_block_number().await.unwrap();
-        self.value = result;
-
-        self.last_fetch_ms = now_ms;
-
-        return result;
-    }
-}
 
 #[derive(Clone, Copy, Deserialize, Debug)]
-#[serde(rename_all="lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum ExecutionMode {
     Parallel,
     Serial,

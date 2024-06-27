@@ -22,11 +22,19 @@ struct DataSource {
     abi: String,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct BlockHandler {
+    start_block: u64,
+    network: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Config {
     data_sources: HashMap<String, DataSource>,
     templates: HashMap<String, Template>,
+    block_handlers: HashMap<String, BlockHandler>,
 }
 //
 
@@ -158,6 +166,61 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
             fn get_event_signature(&self) -> String {
                 #contract_name::#event_name::SIGNATURE.to_string()
+            }
+        }
+    })
+}
+
+#[proc_macro_attribute]
+pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
+    let name = metadata.to_string();
+    let name = name.trim();
+
+    if name.len() == 0 {
+        panic!("The source is missing");
+    }
+
+    let current_dir = std::env::current_dir().unwrap();
+    let content = fs::read_to_string(current_dir.join("config.json"));
+
+    match content {
+        Ok(content) => {
+            let config: Config = serde_json::from_str(&content).unwrap();
+            let source = config.block_handlers.get(name);
+
+            if source.is_none() {
+                panic!("Source '{}' not found.", name);
+            }
+        }
+        Err(err) => {
+            panic!("Error reading the config.json file: {}", err);
+        }
+    };
+
+    let parsed = parse_macro_input!(input as ItemFn);
+    let fn_name = parsed.sig.ident.clone();
+    let fn_body = parsed.block;
+    let fn_args = parsed.sig.inputs.clone();
+
+    let data_source = Literal::string(&name);
+
+    TokenStream::from(quote! {
+        pub struct #fn_name;
+
+        impl #fn_name {
+            pub fn new() -> Arc<Box<(dyn BlockHandler + Send + Sync)>> {
+                Arc::new(Box::new(#fn_name {}))
+            }
+        }
+
+        #[async_trait]
+        impl BlockHandler for #fn_name {
+            async fn handle(&self, #fn_args) {
+                #fn_body
+            }
+
+            fn get_source(&self) -> String {
+                String::from(#data_source)
             }
         }
     })
