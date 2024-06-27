@@ -1275,7 +1275,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ghost_crab"
+name = "ghost-crab"
 version = "0.1.0"
 dependencies = [
  "alloy",
