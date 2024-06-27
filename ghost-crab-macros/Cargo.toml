@@ -6,6 +6,7 @@ name = "ghost-crab-macros"
 description = "macros for ghost-crab"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
 proc-macro2 = "1.0.85"
