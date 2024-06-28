@@ -50,7 +50,7 @@ pub async fn process_logs(
         );
 
         let filter = Filter::new()
-            .address(address)
+            .address(address.clone())
             .event(&event_signature)
             .from_block(current_block)
             .to_block(end_block);
@@ -70,6 +70,7 @@ pub async fn process_logs(
                                 log,
                                 provider,
                                 templates,
+                                contract_address: address
                             })
                             .await;
                     });
@@ -86,6 +87,7 @@ pub async fn process_logs(
                             log,
                             provider,
                             templates,
+                            contract_address: address
                         })
                         .await;
                 }

@@ -1,5 +1,6 @@
 use crate::indexer::TemplateManager;
 use crate::process_logs::ExecutionMode;
+use alloy::primitives::Address;
 use alloy::providers::RootProvider;
 use alloy::rpc::types::eth::Log;
 use alloy::transports::http::{Client, Http};
@@ -10,6 +11,7 @@ pub struct Context {
     pub log: Log,
     pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
+    pub contract_address: Address
 }
 
 pub type HandleInstance = Arc<Box<(dyn Handler + Send + Sync)>>;
