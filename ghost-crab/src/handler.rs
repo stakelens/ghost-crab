@@ -11,7 +11,7 @@ pub struct Context {
     pub log: Log,
     pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
-    pub contract_address: Address
+    pub contract_address: Address,
 }
 
 pub type HandleInstance = Arc<Box<(dyn Handler + Send + Sync)>>;
@@ -32,5 +32,5 @@ pub struct HandlerConfig {
     pub handler: HandleInstance,
     pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
-    pub execution_mode: ExecutionMode
+    pub execution_mode: ExecutionMode,
 }

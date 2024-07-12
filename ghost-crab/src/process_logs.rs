@@ -44,13 +44,10 @@ pub async fn process_logs(
 
         let source = handler.get_source();
 
-        println!(
-            "[{}] Processing logs from {} to {}",
-            source, current_block, end_block
-        );
+        println!("[{}] Processing logs from {} to {}", source, current_block, end_block);
 
         let filter = Filter::new()
-            .address(address.clone())
+            .address(address)
             .event(&event_signature)
             .from_block(current_block)
             .to_block(end_block);
@@ -66,12 +63,7 @@ pub async fn process_logs(
 
                     tokio::spawn(async move {
                         handler
-                            .handle(Context {
-                                log,
-                                provider,
-                                templates,
-                                contract_address: address
-                            })
+                            .handle(Context { log, provider, templates, contract_address: address })
                             .await;
                     });
                 }
@@ -83,12 +75,7 @@ pub async fn process_logs(
                     let templates = templates.clone();
 
                     handler
-                        .handle(Context {
-                            log,
-                            provider,
-                            templates,
-                            contract_address: address
-                        })
+                        .handle(Context { log, provider, templates, contract_address: address })
                         .await;
                 }
             }

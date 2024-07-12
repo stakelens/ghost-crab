@@ -15,7 +15,7 @@ pub struct Server {
 
 impl Server {
     pub fn new(port: u16) -> Self {
-        return Self { port };
+        Self { port }
     }
 
     pub fn start(&self) {
@@ -44,5 +44,5 @@ impl Server {
 }
 
 async fn handler() -> Result<Response<Full<Bytes>>, Infallible> {
-    return Ok(Response::new(Full::new(Bytes::from("Hello world"))));
+    Ok(Response::new(Full::new(Bytes::from("Hello world"))))
 }

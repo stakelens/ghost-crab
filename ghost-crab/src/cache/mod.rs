@@ -1,2 +1,2 @@
-pub mod rpc_proxy;
 pub mod manager;
+pub mod rpc_proxy;

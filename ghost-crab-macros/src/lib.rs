@@ -41,7 +41,7 @@ struct Config {
 #[proc_macro_attribute]
 pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let metadata_string = metadata.to_string();
-    let mut metadata_split = metadata_string.split(".");
+    let mut metadata_split = metadata_string.split('.');
 
     let name = metadata_split.next();
     let event_name = metadata_split.next();
@@ -66,11 +66,11 @@ pub fn handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let event_name = event_name.unwrap();
     let event_name = String::from(event_name.trim());
 
-    if name.len() == 0 {
+    if name.is_empty() {
         panic!("The source is empty");
     }
 
-    if event_name.len() == 0 {
+    if event_name.is_empty() {
         panic!("The event name is empty");
     }
 
@@ -176,7 +176,7 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let name = metadata.to_string();
     let name = name.trim();
 
-    if name.len() == 0 {
+    if name.is_empty() {
         panic!("The source is missing");
     }
 
@@ -202,7 +202,7 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let fn_body = parsed.block;
     let fn_args = parsed.sig.inputs.clone();
 
-    let data_source = Literal::string(&name);
+    let data_source = Literal::string(name);
 
     TokenStream::from(quote! {
         pub struct #fn_name;

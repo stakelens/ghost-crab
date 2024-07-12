@@ -28,11 +28,7 @@ impl RpcWithCache {
         let current_dir = std::env::current_dir().unwrap();
         let cache = Arc::new(DB::open_default(current_dir.join("cache").join(network)).unwrap());
 
-        Self {
-            rpc_url: Arc::new(rpc_url),
-            cache,
-            port,
-        }
+        Self { rpc_url: Arc::new(rpc_url), cache, port }
     }
 
     pub async fn run(&self) {
@@ -54,12 +50,7 @@ impl RpcWithCache {
                     .serve_connection(
                         io,
                         service_fn(|request| {
-                            handler(
-                                request,
-                                Arc::clone(&rpc_url),
-                                Arc::clone(&db),
-                                client.clone(),
-                            )
+                            handler(request, Arc::clone(&rpc_url), Arc::clone(&db), client.clone())
                         }),
                     )
                     .await
@@ -78,35 +69,25 @@ fn divide_request_by_id(input: &[u8]) -> Option<(&[u8], &[u8], &[u8])> {
     let value_start = id_field_index + ID_FIELD.len();
     let value_end = input[value_start..].iter().position(|&x| x == b',')?;
 
-    return Some((
+    Some((
         &input[..value_start],
         &input[value_start..value_start + value_end],
         &input[value_start + value_end..],
-    ));
+    ))
 }
 
-const INVALID_WORDS: &[&[u8]] = &[
-    b"eth_blockNumber",
-    b"earliest",
-    b"latest",
-    b"safe",
-    b"finalized",
-    b"pending",
-];
+const INVALID_WORDS: &[&[u8]] =
+    &[b"eth_blockNumber", b"earliest", b"latest", b"safe", b"finalized", b"pending"];
 
 #[inline]
 fn contains_invalid_word(input: &[u8]) -> bool {
     for search in INVALID_WORDS {
-        if input
-            .windows(search.len())
-            .position(|x| &x == search)
-            .is_some()
-        {
+        if input.windows(search.len()).any(|x| &x == search) {
             return true;
         }
     }
 
-    return false;
+    false
 }
 
 async fn handler(
@@ -125,14 +106,8 @@ async fn handler(
             .body(Full::new(request_received.clone()))
             .unwrap();
 
-        let rpc_response = client
-            .request(rpc_request)
-            .await
-            .unwrap()
-            .collect()
-            .await
-            .unwrap()
-            .to_bytes();
+        let rpc_response =
+            client.request(rpc_request).await.unwrap().collect().await.unwrap().to_bytes();
 
         return Ok(Response::new(Full::new(rpc_response)));
     }
@@ -154,21 +129,14 @@ async fn handler(
         .body(Full::new(request_received.clone()))
         .unwrap();
 
-    let rpc_response = client
-        .request(rpc_request)
-        .await
-        .unwrap()
-        .collect()
-        .await
-        .unwrap()
-        .to_bytes();
+    let rpc_response =
+        client.request(rpc_request).await.unwrap().collect().await.unwrap().to_bytes();
 
     let rpc_response_string = String::from_utf8_lossy(&rpc_response);
 
     // Avoid caching errors
     if !rpc_response_string.contains(r#""error":{"code":-"#) {
-        db.put(request_hash, rpc_response_string.to_string())
-            .unwrap();
+        db.put(request_hash, rpc_response_string.to_string()).unwrap();
     }
 
     Ok(Response::new(Full::new(rpc_response)))
