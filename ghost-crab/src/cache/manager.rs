@@ -17,13 +17,15 @@ pub struct RPCManager {
     config: config::Config,
 }
 
+impl Default for RPCManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RPCManager {
     pub fn new() -> Self {
-        RPCManager {
-            rpcs: HashMap::new(),
-            current_port: 3001,
-            config: config::load(),
-        }
+        RPCManager { rpcs: HashMap::new(), current_port: 3001, config: config::load() }
     }
 
     pub async fn get(&mut self, network: String) -> RootProvider<Http<Client>> {
@@ -31,15 +33,10 @@ impl RPCManager {
         let provider = self.rpcs.get(rpc_url);
 
         match provider {
-            Some(value) => {
-                return value.clone();
-            }
+            Some(value) => value.clone(),
             None => {
-                let provider = ProviderBuilder::new().on_http(
-                    format!("http://localhost:{}", self.current_port)
-                        .parse()
-                        .unwrap(),
-                );
+                let provider = ProviderBuilder::new()
+                    .on_http(format!("http://localhost:{}", self.current_port).parse().unwrap());
 
                 self.rpcs.insert(rpc_url.clone(), provider.clone());
                 let rpc_with_cache = RpcWithCache::new(network, rpc_url.clone(), self.current_port);
@@ -48,8 +45,8 @@ impl RPCManager {
                     rpc_with_cache.run().await;
                 });
 
-                self.current_port = self.current_port + 1;
-                return provider;
+                self.current_port += 1;
+                provider
             }
         }
     }

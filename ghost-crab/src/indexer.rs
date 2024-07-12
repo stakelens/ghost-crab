@@ -21,10 +21,7 @@ impl TemplateManager {
     pub async fn start(&self, template: Template) {
         let config = config::load();
 
-        let source = config
-            .templates
-            .get(&template.handler.get_source())
-            .unwrap();
+        let source = config.templates.get(&template.handler.get_source()).unwrap();
 
         let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
         let execution_mode = source.execution_mode.unwrap_or(ExecutionMode::Parallel);
@@ -52,6 +49,12 @@ pub struct Indexer {
     templates: TemplateManager,
 }
 
+impl Default for Indexer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Indexer {
     pub fn new() -> Indexer {
         let config = config::load();
@@ -62,13 +65,13 @@ impl Indexer {
         let server = Server::new(3000);
         server.start();
 
-        return Indexer {
+        Indexer {
             config: config.clone(),
             handlers: Vec::new(),
             block_handlers: Vec::new(),
             rx,
             templates,
-        };
+        }
     }
 
     pub async fn load_event_handler(&mut self, handler: HandleInstance) {
@@ -92,11 +95,7 @@ impl Indexer {
     }
 
     pub async fn load_block_handler(&mut self, handler: BlockHandlerInstance) {
-        let source = self
-            .config
-            .block_handlers
-            .get(&handler.get_source())
-            .unwrap();
+        let source = self.config.block_handlers.get(&handler.get_source()).unwrap();
 
         let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
         let execution_mode = source.execution_mode.unwrap_or(ExecutionMode::Parallel);

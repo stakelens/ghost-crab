@@ -33,14 +33,7 @@ pub struct BlockConfig {
 }
 
 pub async fn process_logs_block(
-    BlockConfig {
-        start_block,
-        handler,
-        provider,
-        templates,
-        step,
-        execution_mode,
-    }: BlockConfig,
+    BlockConfig { start_block, handler, provider, templates, step, execution_mode }: BlockConfig,
 ) {
     let mut current_block = start_block;
     let mut latest_block_manager = LatestBlockManager::new(1000, provider.clone());
@@ -66,13 +59,7 @@ pub async fn process_logs_block(
                 let templates = templates.clone();
 
                 tokio::spawn(async move {
-                    handler
-                        .handle(BlockContext {
-                            provider,
-                            templates,
-                            block,
-                        })
-                        .await;
+                    handler.handle(BlockContext { provider, templates, block }).await;
                 });
             }
             ExecutionMode::Serial => {
@@ -80,16 +67,10 @@ pub async fn process_logs_block(
                 let provider = provider.clone();
                 let templates = templates.clone();
 
-                handler
-                    .handle(BlockContext {
-                        provider,
-                        templates,
-                        block,
-                    })
-                    .await;
+                handler.handle(BlockContext { provider, templates, block }).await;
             }
         }
 
-        current_block = current_block + step;
+        current_block += step;
     }
 }

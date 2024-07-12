@@ -49,7 +49,7 @@ static CONFIG_CACHE: Lazy<Config> = Lazy::new(|| {
     let mut config: Config = serde_json::from_str(&config_string).unwrap();
 
     config.networks.iter_mut().for_each(|(_key, value)| {
-        if value.starts_with("$") {
+        if value.starts_with('$') {
             *value = env::var(&value[1..]).unwrap();
         }
     });
@@ -58,5 +58,5 @@ static CONFIG_CACHE: Lazy<Config> = Lazy::new(|| {
 });
 
 pub fn load() -> Config {
-    return CONFIG_CACHE.clone();
+    CONFIG_CACHE.clone()
 }
