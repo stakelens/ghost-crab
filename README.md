@@ -209,7 +209,7 @@ GhostCrab uses a configuration file to specify the data sources, templates, and 
 
 ```json
 {
-  "data_sources": {
+  "dataSources": {
     "MyDataSourceName": {
       "abi": "my_contract_abi.json",
       "address": "0x1234567890123456789012345678901234567890",
@@ -226,7 +226,7 @@ GhostCrab uses a configuration file to specify the data sources, templates, and 
   "networks": {
     "mainnet": "$MAINNET_RPC_URL"
   },
-  "block_handlers": {
+  "blockHandlers": {
     "MyThirdDataSourceName": {
       "start_block": 1000000,
       "network": "mainnet"
