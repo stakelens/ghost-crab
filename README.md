@@ -218,12 +218,11 @@ async fn VaultsRegistry(ctx: Context) {
         })
         .await;
 }
+```
 
 In the above example, we are tracking a `VaultsRegistry` contract which emits a `VaultAdded` event every time a new vault is added. Under the hood, GhostCrab is using the `TemplateManager` to start a new indexing process for the `ETHVault` contract on the specified address, and start block.
 
 In this particular case, there is no way we could have known the address of the `ETHVault` contract before the `VaultAdded` event was emitted, so this is when templates come handy to dynamically start the indexing processes for new contracts.
-
-```
 
 ## Configuration
 
@@ -263,8 +262,6 @@ In summary:
 - If you want to create an event handler, you need to define a data source. This data source will be loaded by the proc macro `handler` (event handler).
 - If you want to create a template, you need to define a template. This template will be loaded by the proc macro `handler` (event handler).
 - If you want to create a block handler, you need to define a block handler. This block handler will be loaded by the procedural macro `block_handler`.
-
-The nuance here about data sources and templates is that data sources are used to process events and blocks that are directly related to a specific smart contract, while templates are used to dynamically start new indexing processes for new contracts.
 
 Note: the `handler` proc macro, tries to look for a data source first, and if it doesn't find one, it will look for a template.
 
