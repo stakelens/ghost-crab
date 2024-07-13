@@ -242,7 +242,7 @@ In summary:
 - If you want to create a template, you need to define a template. This template will be loaded by the proc macro `handler` (event handler).
 - If you want to create a block handler, you need to define a block handler. This block handler will be loaded by the procedural macro `block_handler`.
 
-Note: the `handler` proc macro, tries to look for a data source first, and if it doesn't find one, it will look for a template.
+Note: the `handler` (event handler) proc macro, tries to look for a data source first, and if it doesn't find one, it will look for a template.
 
 # Examples
 
