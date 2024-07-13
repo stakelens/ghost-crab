@@ -59,7 +59,6 @@ Event handlers are used to process events emitted by smart contracts. They are d
 Here's an example of an event handler that processes `TVLUpdated` events emitted by the EtherFi Oracle contract:
 
 ```rust
-use crate::db;
 use alloy::eips::BlockNumberOrTag;
 use ghost_crab::prelude::*;
 
@@ -80,18 +79,8 @@ async fn EtherFiTVLUpdated(ctx: Context) {
         .unwrap();
 
     let block_timestamp = block.header.timestamp as i64;
-    let db = db::get().await;
 
-    sqlx::query!(
-        r#"insert into "EtherFi" (block_number, block_timestamp, log_index, eth) values ($1, $2, $3, $4)"#,
-        block_number,
-        block_timestamp,
-        log_index,
-        current_tvl
-    )
-    .execute(db)
-    .await
-    .unwrap();
+    // Save the data to your database
 }
 ```
 
@@ -126,8 +115,6 @@ Here's an example of a block handler that processes blocks:
 use alloy::{rpc::types::eth::BlockNumberOrTag, sol};
 use ghost_crab::prelude::*;
 
-use crate::db;
-
 sol!(
     #[sol(rpc)]
     StaderStakePoolsManager,
@@ -160,15 +147,7 @@ async fn StaderBlockHandler(ctx: BlockContext) {
     let block_number = block_number as i64;
     let block_timestamp = ctx.block.header.timestamp as i64;
 
-    sqlx::query!(
-        r#"insert into "Stader" (block_number, block_timestamp, eth) values ($1,$2,$3)"#,
-        block_number,
-        block_timestamp,
-        eth,
-    )
-    .execute(db)
-    .await
-    .unwrap();
+    // Save the data to your database
 }
 
 ```
