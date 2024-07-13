@@ -1,6 +1,6 @@
 <div align="center">
     <h1>GhostCrab 👻🦀</h1>
-    <big>Ethereum smart contracts indexer SDK written in Rust 🦀</big>
+    <big>Ethereum smart contracts indexer SDK written in Rust</big>
     <div>
     <br/>
         <a href="https://github.com/stakelens/ghost-crab/pulse"><img src="https://img.shields.io/github/last-commit/stakelens/ghost-crab.svg"/></a>
