@@ -6,10 +6,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-permissions:
-  pull-requests: write
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
