@@ -246,4 +246,4 @@ Note: the `handler` proc macro, tries to look for a data source first, and if it
 
 # Examples
 
-If you want to see some examples of how to use GhostCrab, you can check out our [indexers](https://github.com/stakelens/indexers) repo, where we maintain a collection of smart contracts indexers for our dashboard [Stakelens](https://stakelens.com).
+If you want to see some examples of how to use GhostCrab, you can check out our [indexers](https://github.com/stakelens/indexers) repo, where we maintain a collection of smart contracts indexers for our [staking analyticsdashboard](https://stakelens.com).
