@@ -62,7 +62,7 @@ Here's an example of an event handler that processes `TVLUpdated` events emitted
 use alloy::eips::BlockNumberOrTag;
 use ghost_crab::prelude::*;
 
-#[handler(EtherFi.TVLUpdated)]
+#[event_handler(EtherFi.TVLUpdated)]
 async fn EtherFiTVLUpdated(ctx: Context) {
     let block_number = ctx.log.block_number.unwrap() as i64;
     let current_tvl = event._currentTvl.to_string();
@@ -180,12 +180,12 @@ Here's an example on how to use templates:
 use alloy::eips::BlockNumberOrTag;
 use ghost_crab::prelude::*;
 
-#[handler(ETHVault.Deposited)]
+#[template(ETHVault.Deposited)]
 async fn ETHVaultDeposited(ctx: Context) {
     // Handler Logic
 }
 
-#[handler(VaultsRegistry.VaultAdded)]
+#[event_handler(VaultsRegistry.VaultAdded)]
 async fn VaultsRegistry(ctx: Context) {
     let vault = event.vault.to_string();
 
@@ -238,11 +238,9 @@ GhostCrab uses a configuration file to specify the data sources, templates, and 
 In summary:
 
 - If you want to use an environment variable, you can use the `$ENV_VAR` syntax within the configuration file.
-- If you want to create an event handler, you need to define a data source. This data source will be loaded by the proc macro `handler` (event handler).
-- If you want to create a template, you need to define a template. This template will be loaded by the proc macro `handler` (event handler).
+- If you want to create an event handler, you need to define a data source. This data source will be loaded by the proc macro `event_handler`.
+- If you want to create a template, you need to define a template. This template will be loaded by the proc macro `template`.
 - If you want to create a block handler, you need to define a block handler. This block handler will be loaded by the procedural macro `block_handler`.
-
-Note: the `handler` (event handler) proc macro, tries to look for a data source first, and if it doesn't find one, it will look for a template.
 
 # Examples
 

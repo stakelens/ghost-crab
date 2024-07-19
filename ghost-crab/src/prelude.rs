@@ -7,7 +7,8 @@ pub use alloy::{
 };
 pub use async_trait::async_trait;
 pub use ghost_crab_macros::block_handler;
-pub use ghost_crab_macros::handler;
+pub use ghost_crab_macros::event_handler;
+pub use ghost_crab_macros::template;
 pub use std::sync::Arc;
 pub use tokio;
 
