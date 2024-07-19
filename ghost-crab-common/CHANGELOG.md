@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/stakelens/ghost-crab/compare/ghost-crab-common-v0.1.0...ghost-crab-common-v0.1.1) - 2024-07-19
+
+### Other
+- release ([#33](https://github.com/stakelens/ghost-crab/pull/33))
+
 ## [0.1.0](https://github.com/stakelens/ghost-crab/releases/tag/ghost-crab-common-v0.1.0) - 2024-07-19
 
 ### Other
