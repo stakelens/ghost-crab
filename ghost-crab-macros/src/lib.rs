@@ -26,18 +26,21 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let config = get_config();
-    let source = config.block_handlers.get(name);
+    let source = config.block_handlers.get(name).expect("Source not found.");
 
-    if source.is_none() {
-        panic!("Source '{}' not found.", name);
-    }
+    let step = Literal::u64_suffixed(source.step);
+    let start_block = Literal::u64_suffixed(source.start_block);
+    let network = Literal::string(&source.network);
+
+    let execution_mode = match source.execution_mode {
+        Some(ExecutionMode::Serial) => quote! { ExecutionMode::Serial },
+        _ => quote! { ExecutionMode::Parallel },
+    };
 
     let parsed = parse_macro_input!(input as ItemFn);
     let fn_name = parsed.sig.ident.clone();
     let fn_body = parsed.block;
     let fn_args = parsed.sig.inputs.clone();
-
-    let data_source = Literal::string(name);
 
     TokenStream::from(quote! {
         pub struct #fn_name;
@@ -54,8 +57,20 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
                 #fn_body
             }
 
-            fn get_source(&self) -> String {
-                String::from(#data_source)
+            fn step(&self) -> u64 {
+                #step
+            }
+
+            fn network(&self) -> String {
+                #network
+            }
+
+            fn start_block(&self) -> u64 {
+                #start_block
+            }
+
+            fn execution_mode(&self) -> ExecutionMode {
+                #execution_mode
             }
         }
     })

@@ -4,7 +4,6 @@ use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
 use crate::process_logs::process_logs;
 use crate::server::Server;
-use ghost_crab_common::config::ExecutionMode;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 #[derive(Clone)]
@@ -88,18 +87,12 @@ impl Indexer {
     }
 
     pub async fn load_block_handler(&mut self, handler: BlockHandlerInstance) {
-        let source = self.config.block_handlers.get(&handler.get_source()).unwrap();
-
-        let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
-        let execution_mode = source.execution_mode.unwrap_or(ExecutionMode::Parallel);
+        let provider = RPC_MANAGER.lock().await.get(handler.network()).await;
 
         self.block_handlers.push(BlockConfig {
-            start_block: source.start_block,
             handler,
             provider,
             templates: self.templates.clone(),
-            step: source.step,
-            execution_mode,
         });
     }
 

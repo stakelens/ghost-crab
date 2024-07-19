@@ -20,21 +20,23 @@ pub type BlockHandlerInstance = Arc<Box<(dyn BlockHandler + Send + Sync)>>;
 #[async_trait]
 pub trait BlockHandler {
     async fn handle(&self, params: BlockContext);
-    fn get_source(&self) -> String;
+    fn step(&self) -> u64;
+    fn network(&self) -> String;
+    fn start_block(&self) -> u64;
+    fn execution_mode(&self) -> ExecutionMode;
 }
 
 pub struct BlockConfig {
-    pub start_block: u64,
     pub handler: BlockHandlerInstance,
     pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
-    pub step: u64,
-    pub execution_mode: ExecutionMode,
 }
 
-pub async fn process_logs_block(
-    BlockConfig { start_block, handler, provider, templates, step, execution_mode }: BlockConfig,
-) {
+pub async fn process_logs_block(BlockConfig { handler, provider, templates }: BlockConfig) {
+    let step = handler.step();
+    let start_block = handler.start_block();
+    let execution_mode = handler.execution_mode();
+
     let mut current_block = start_block;
     let mut latest_block_manager = LatestBlockManager::new(1000, provider.clone());
 
