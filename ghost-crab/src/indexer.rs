@@ -3,6 +3,7 @@ use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
 use crate::process_logs::process_logs;
 use crate::server::Server;
+use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 #[derive(Clone)]
@@ -17,7 +18,7 @@ pub struct Template {
 }
 
 impl TemplateManager {
-    pub async fn start(&self, template: Template) {
+    pub async fn start(&self, template: Template) -> Result<(), SendError<HandlerConfig>> {
         self.tx
             .send(HandlerConfig {
                 start_block: template.start_block,
@@ -27,7 +28,6 @@ impl TemplateManager {
                 templates: self.clone(),
             })
             .await
-            .unwrap();
     }
 }
 
