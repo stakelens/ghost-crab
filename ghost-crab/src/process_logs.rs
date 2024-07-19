@@ -13,7 +13,7 @@ pub async fn process_logs(
     let network = handler.network();
     let rpc_url = handler.rpc_url();
     let execution_mode = handler.execution_mode();
-    let event_signature = handler.get_event_signature();
+    let event_signature = handler.event_signature();
 
     let provider = RPC_MANAGER.lock().await.get_or_create(network, rpc_url).await;
     let mut current_block = start_block;

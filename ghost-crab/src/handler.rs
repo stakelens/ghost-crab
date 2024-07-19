@@ -25,7 +25,7 @@ pub trait Handler {
     fn network(&self) -> String;
     fn rpc_url(&self) -> String;
     fn execution_mode(&self) -> ExecutionMode;
-    fn get_event_signature(&self) -> String;
+    fn event_signature(&self) -> String;
 }
 
 #[derive(Clone)]

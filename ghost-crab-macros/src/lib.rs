@@ -243,7 +243,7 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
                 #execution_mode
             }
 
-            fn get_event_signature(&self) -> String {
+            fn event_signature(&self) -> String {
                 #contract_name::#event_name::SIGNATURE.to_string()
             }
         }
