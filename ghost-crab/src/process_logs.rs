@@ -3,12 +3,13 @@ use crate::latest_block_manager::LatestBlockManager;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::rpc::types::eth::Filter;
+use alloy::transports::TransportError;
 use ghost_crab_common::config::ExecutionMode;
 use std::time::Duration;
 
 pub async fn process_logs(
     HandlerConfig { start_block, step, address, handler, provider, templates }: HandlerConfig,
-) {
+) -> Result<(), TransportError> {
     let mut current_block = start_block;
     let event_signature = handler.get_event_signature();
     let address = address.parse::<Address>().unwrap();
@@ -19,13 +20,7 @@ pub async fn process_logs(
 
     loop {
         let mut end_block = current_block + step;
-        let latest_block = match latest_block_manager.get().await {
-            Ok(block_number) => block_number,
-            Err(error) => {
-                println!("Error fetching block number: {error}");
-                continue;
-            }
-        };
+        let latest_block = latest_block_manager.get().await?;
 
         if end_block > latest_block {
             end_block = latest_block;
@@ -46,7 +41,7 @@ pub async fn process_logs(
             .from_block(current_block)
             .to_block(end_block);
 
-        let logs = provider.get_logs(&filter).await.unwrap();
+        let logs = provider.get_logs(&filter).await?;
 
         match execution_mode {
             ExecutionMode::Parallel => {
@@ -66,7 +61,6 @@ pub async fn process_logs(
                 for log in logs {
                     let templates = templates.clone();
                     let provider = provider.clone();
-                    let templates = templates.clone();
 
                     handler
                         .handle(Context { log, provider, templates, contract_address: address })

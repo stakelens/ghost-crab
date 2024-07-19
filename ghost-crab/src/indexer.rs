@@ -99,20 +99,26 @@ impl Indexer {
     pub async fn start(mut self) {
         for block_handler in self.block_handlers {
             tokio::spawn(async move {
-                process_logs_block(block_handler).await;
+                if let Err(error) = process_logs_block(block_handler).await {
+                    println!("Error processing logs for block handler: {error}");
+                }
             });
         }
 
         for handler in self.handlers {
             tokio::spawn(async move {
-                process_logs(handler).await;
+                if let Err(error) = process_logs(handler).await {
+                    println!("Error processing logs for handler: {error}");
+                }
             });
         }
 
-        // For dynamic sources
+        // For dynamic sources (Templates)
         while let Some(handler) = self.rx.recv().await {
             tokio::spawn(async move {
-                process_logs(handler).await;
+                if let Err(error) = process_logs(handler).await {
+                    println!("Error processing logs for handler: {error}");
+                }
             });
         }
     }

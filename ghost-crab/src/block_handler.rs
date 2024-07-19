@@ -5,6 +5,7 @@ use alloy::providers::RootProvider;
 use alloy::rpc::types::eth::Block;
 use alloy::rpc::types::eth::BlockNumberOrTag;
 use alloy::transports::http::{Client, Http};
+use alloy::transports::TransportError;
 use async_trait::async_trait;
 use ghost_crab_common::config::ExecutionMode;
 use std::sync::Arc;
@@ -33,7 +34,9 @@ pub struct BlockConfig {
     pub templates: TemplateManager,
 }
 
-pub async fn process_logs_block(BlockConfig { handler, provider, templates }: BlockConfig) {
+pub async fn process_logs_block(
+    BlockConfig { handler, provider, templates }: BlockConfig,
+) -> Result<(), TransportError> {
     let step = handler.step();
     let start_block = handler.start_block();
     let execution_mode = handler.execution_mode();
@@ -43,13 +46,7 @@ pub async fn process_logs_block(BlockConfig { handler, provider, templates }: Bl
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 
     loop {
-        let latest_block = match latest_block_manager.get().await {
-            Ok(block_number) => block_number,
-            Err(error) => {
-                println!("Error fetching block number: {error}");
-                continue;
-            }
-        };
+        let latest_block = latest_block_manager.get().await?;
 
         if current_block >= latest_block {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
@@ -58,8 +55,7 @@ pub async fn process_logs_block(BlockConfig { handler, provider, templates }: Bl
 
         let block = provider
             .get_block_by_number(BlockNumberOrTag::Number(current_block), false)
-            .await
-            .unwrap()
+            .await?
             .unwrap();
 
         match execution_mode {
