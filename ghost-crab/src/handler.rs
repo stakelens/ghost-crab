@@ -21,6 +21,7 @@ pub trait Handler {
     async fn handle(&self, params: Context);
     fn get_source(&self) -> String;
     fn is_template(&self) -> bool;
+    fn execution_mode(&self) -> ExecutionMode;
     fn get_event_signature(&self) -> String;
 }
 
@@ -32,5 +33,4 @@ pub struct HandlerConfig {
     pub handler: HandleInstance,
     pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
-    pub execution_mode: ExecutionMode,
 }

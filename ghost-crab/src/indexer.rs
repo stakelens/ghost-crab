@@ -25,7 +25,6 @@ impl TemplateManager {
         let source = config.templates.get(&template.handler.get_source()).unwrap();
 
         let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
-        let execution_mode = source.execution_mode.unwrap_or(ExecutionMode::Parallel);
 
         self.tx
             .send(HandlerConfig {
@@ -35,7 +34,6 @@ impl TemplateManager {
                 provider,
                 handler: template.handler,
                 templates: self.clone(),
-                execution_mode,
             })
             .await
             .unwrap();
@@ -82,7 +80,6 @@ impl Indexer {
 
         let source = self.config.data_sources.get(&handler.get_source()).unwrap();
         let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
-        let execution_mode = source.execution_mode.unwrap_or(ExecutionMode::Parallel);
 
         self.handlers.push(HandlerConfig {
             start_block: source.start_block,
@@ -91,7 +88,6 @@ impl Indexer {
             provider,
             handler,
             templates: self.templates.clone(),
-            execution_mode,
         });
     }
 

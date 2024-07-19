@@ -1,5 +1,5 @@
 extern crate proc_macro;
-use ghost_crab_common::config::Config;
+use ghost_crab_common::config::{Config, ExecutionMode};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
 use quote::{format_ident, quote};
@@ -8,122 +8,12 @@ use syn::{parse_macro_input, ItemFn};
 
 #[proc_macro_attribute]
 pub fn event_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    let (name, event_name) = get_source_and_event(metadata);
-    let config = get_config();
-
-    let source = config.data_sources.get(&name).expect("Source not found.");
-    let abi = Literal::string(&source.abi.clone());
-
-    let parsed = parse_macro_input!(input as ItemFn);
-    let fn_name = parsed.sig.ident.clone();
-    let fn_args = parsed.sig.inputs.clone();
-    let fn_body = parsed.block.clone();
-    let ctx = get_context_identifier(parsed);
-
-    let contract_name = format_ident!("{}Contract", fn_name);
-    let data_source = Literal::string(&name);
-
-    TokenStream::from(quote! {
-        sol!(
-            #[sol(rpc)]
-            #contract_name,
-            #abi
-        );
-
-        pub struct #fn_name;
-
-        impl #fn_name {
-            pub fn new() -> Arc<Box<(dyn Handler + Send + Sync)>> {
-                Arc::new(Box::new(#fn_name {}))
-            }
-        }
-
-        #[async_trait]
-        impl Handler for #fn_name {
-            async fn handle(&self, #fn_args) {
-                let decoded_log = #ctx
-                    .log
-                    .log_decode::<#contract_name::#event_name>()
-                    .unwrap();
-
-                let event = decoded_log.data();
-
-                #fn_body
-            }
-
-            fn get_source(&self) -> String {
-                String::from(#data_source)
-            }
-
-            fn is_template(&self) -> bool {
-                false
-            }
-
-            fn get_event_signature(&self) -> String {
-                #contract_name::#event_name::SIGNATURE.to_string()
-            }
-        }
-    })
+    create_handler(metadata, input, false)
 }
 
 #[proc_macro_attribute]
 pub fn template(metadata: TokenStream, input: TokenStream) -> TokenStream {
-    let (name, event_name) = get_source_and_event(metadata);
-    let config = get_config();
-
-    let source = config.templates.get(&name).expect("Source not found.");
-    let abi = Literal::string(&source.abi.clone());
-
-    let parsed = parse_macro_input!(input as ItemFn);
-    let fn_name = parsed.sig.ident.clone();
-    let fn_args = parsed.sig.inputs.clone();
-    let fn_body = parsed.block.clone();
-    let ctx = get_context_identifier(parsed);
-
-    let contract_name = format_ident!("{}Contract", fn_name);
-    let data_source = Literal::string(&name);
-
-    TokenStream::from(quote! {
-        sol!(
-            #[sol(rpc)]
-            #contract_name,
-            #abi
-        );
-
-        pub struct #fn_name;
-
-        impl #fn_name {
-            pub fn new() -> Arc<Box<(dyn Handler + Send + Sync)>> {
-                Arc::new(Box::new(#fn_name {}))
-            }
-        }
-
-        #[async_trait]
-        impl Handler for #fn_name {
-            async fn handle(&self, #fn_args) {
-                let decoded_log = #ctx
-                    .log
-                    .log_decode::<#contract_name::#event_name>()
-                    .unwrap();
-
-                let event = decoded_log.data();
-
-                #fn_body
-            }
-
-            fn get_source(&self) -> String {
-                String::from(#data_source)
-            }
-
-            fn is_template(&self) -> bool {
-                true
-            }
-
-            fn get_event_signature(&self) -> String {
-                #contract_name::#event_name::SIGNATURE.to_string()
-            }
-        }
-    })
+    create_handler(metadata, input, true)
 }
 
 #[proc_macro_attribute]
@@ -221,4 +111,99 @@ fn get_context_identifier(parsed: ItemFn) -> Ident {
     };
 
     return ctx;
+}
+
+fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) -> TokenStream {
+    let (name, event_name) = get_source_and_event(metadata);
+    let config = get_config();
+
+    let abi = if is_template {
+        config.templates.get(&name).expect("Source not found.").abi.clone()
+    } else {
+        config.data_sources.get(&name).expect("Source not found.").abi.clone()
+    };
+
+    let abi = Literal::string(&abi);
+
+    let execution_mode = if is_template {
+        if let Some(execution_mode) =
+            config.templates.get(&name).expect("Source not found.").execution_mode.clone()
+        {
+            execution_mode
+        } else {
+            ExecutionMode::Parallel
+        }
+    } else {
+        if let Some(execution_mode) =
+            config.data_sources.get(&name).expect("Source not found.").execution_mode.clone()
+        {
+            execution_mode
+        } else {
+            ExecutionMode::Parallel
+        }
+    };
+
+    let execution_mode = match execution_mode {
+        ExecutionMode::Parallel => quote! {
+            ExecutionMode::Parallel
+        },
+        ExecutionMode::Serial => quote! {
+            ExecutionMode::Serial
+        },
+    };
+
+    let parsed = parse_macro_input!(input as ItemFn);
+    let fn_name = parsed.sig.ident.clone();
+    let fn_args = parsed.sig.inputs.clone();
+    let fn_body = parsed.block.clone();
+    let ctx = get_context_identifier(parsed);
+
+    let contract_name = format_ident!("{}Contract", fn_name);
+    let data_source = Literal::string(&name);
+
+    TokenStream::from(quote! {
+        sol!(
+            #[sol(rpc)]
+            #contract_name,
+            #abi
+        );
+
+        pub struct #fn_name;
+
+        impl #fn_name {
+            pub fn new() -> Arc<Box<(dyn Handler + Send + Sync)>> {
+                Arc::new(Box::new(#fn_name {}))
+            }
+        }
+
+        #[async_trait]
+        impl Handler for #fn_name {
+            async fn handle(&self, #fn_args) {
+                let decoded_log = #ctx
+                    .log
+                    .log_decode::<#contract_name::#event_name>()
+                    .unwrap();
+
+                let event = decoded_log.data();
+
+                #fn_body
+            }
+
+            fn get_source(&self) -> String {
+                String::from(#data_source)
+            }
+
+            fn is_template(&self) -> bool {
+                #is_template
+            }
+
+            fn execution_mode(&self) -> ExecutionMode {
+                #execution_mode
+            }
+
+            fn get_event_signature(&self) -> String {
+                #contract_name::#event_name::SIGNATURE.to_string()
+            }
+        }
+    })
 }

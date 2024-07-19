@@ -6,20 +6,13 @@ use alloy::rpc::types::eth::Filter;
 use ghost_crab_common::config::ExecutionMode;
 
 pub async fn process_logs(
-    HandlerConfig {
-        start_block,
-        step,
-        address,
-        handler,
-        provider,
-        templates,
-        execution_mode,
-    }: HandlerConfig,
+    HandlerConfig { start_block, step, address, handler, provider, templates }: HandlerConfig,
 ) {
     let mut current_block = start_block;
     let event_signature = handler.get_event_signature();
     let address = address.parse::<Address>().unwrap();
 
+    let execution_mode = handler.execution_mode();
     let mut block_manager = LatestBlockManager::new(1000, provider.clone());
 
     loop {
