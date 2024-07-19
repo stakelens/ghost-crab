@@ -21,6 +21,7 @@ pub trait Handler {
     async fn handle(&self, params: Context);
     fn get_source(&self) -> String;
     fn is_template(&self) -> bool;
+    fn start_block(&self) -> u64;
     fn address(&self) -> Address;
     fn network(&self) -> String;
     fn rpc_url(&self) -> String;

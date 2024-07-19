@@ -70,12 +70,9 @@ impl Indexer {
             return;
         }
 
-        let source = self.config.data_sources.get(&handler.get_source()).unwrap();
-        let address = handler.address();
-
         self.handlers.push(HandlerConfig {
-            start_block: source.start_block,
-            address,
+            start_block: handler.start_block(),
+            address: handler.address(),
             step: 10_000,
             handler,
             templates: self.templates.clone(),

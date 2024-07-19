@@ -143,6 +143,7 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
     let network;
     let execution_mode;
     let address;
+    let start_block;
 
     if is_template {
         let source = config.templates.get(&name).expect("Source not found.");
@@ -152,7 +153,8 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
         execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
         address = quote! {
             Address::ZERO
-        }
+        };
+        start_block = Literal::u64_suffixed(0);
     } else {
         let source = config.data_sources.get(&name).expect("Source not found.");
 
@@ -164,7 +166,8 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
 
         address = quote! {
             address!(#address_literal)
-        }
+        };
+        start_block = Literal::u64_suffixed(source.start_block);
     };
 
     let rpc_url = config.networks.get(&network).expect("RPC url not found for network");
@@ -217,6 +220,10 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
                 let event = decoded_log.data();
 
                 #fn_body
+            }
+
+            fn start_block(&self) -> u64 {
+                #start_block
             }
 
             fn get_source(&self) -> String {
