@@ -1,7 +1,9 @@
 [package]
 name = "ghost-crab-common"
+description = "ghost-crab common"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 
 [lib]
