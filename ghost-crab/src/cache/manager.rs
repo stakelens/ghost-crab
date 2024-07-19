@@ -1,5 +1,4 @@
 use super::rpc_proxy::RpcWithCache;
-use crate::config;
 use alloy::providers::ProviderBuilder;
 use alloy::providers::RootProvider;
 use alloy::transports::http::{Client, Http};
@@ -14,7 +13,6 @@ pub static RPC_MANAGER: Lazy<Arc<Mutex<RPCManager>>> =
 pub struct RPCManager {
     current_port: u16,
     rpcs: HashMap<String, RootProvider<Http<Client>>>,
-    config: config::Config,
 }
 
 impl Default for RPCManager {
@@ -25,12 +23,15 @@ impl Default for RPCManager {
 
 impl RPCManager {
     pub fn new() -> Self {
-        RPCManager { rpcs: HashMap::new(), current_port: 3001, config: config::load() }
+        RPCManager { rpcs: HashMap::new(), current_port: 3001 }
     }
 
-    pub async fn get(&mut self, network: String) -> RootProvider<Http<Client>> {
-        let rpc_url = self.config.networks.get(&network).unwrap();
-        let provider = self.rpcs.get(rpc_url);
+    pub async fn get_or_create(
+        &mut self,
+        network: String,
+        rpc_url: String,
+    ) -> RootProvider<Http<Client>> {
+        let provider = self.rpcs.get(&rpc_url);
 
         match provider {
             Some(value) => value.clone(),

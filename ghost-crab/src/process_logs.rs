@@ -1,3 +1,4 @@
+use crate::cache::manager::RPC_MANAGER;
 use crate::handler::{Context, HandlerConfig};
 use crate::latest_block_manager::LatestBlockManager;
 use alloy::primitives::Address;
@@ -8,13 +9,17 @@ use ghost_crab_common::config::ExecutionMode;
 use std::time::Duration;
 
 pub async fn process_logs(
-    HandlerConfig { start_block, step, address, handler, provider, templates }: HandlerConfig,
+    HandlerConfig { start_block, step, address, handler, templates }: HandlerConfig,
 ) -> Result<(), TransportError> {
-    let mut current_block = start_block;
+    let network = handler.network();
+    let rpc_url = handler.rpc_url();
+    let execution_mode = handler.execution_mode();
     let event_signature = handler.get_event_signature();
+
+    let provider = RPC_MANAGER.lock().await.get_or_create(network, rpc_url).await;
+    let mut current_block = start_block;
     let address = address.parse::<Address>().unwrap();
 
-    let execution_mode = handler.execution_mode();
     let mut latest_block_manager =
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 

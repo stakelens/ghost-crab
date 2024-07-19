@@ -28,6 +28,9 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     let config = get_config();
     let source = config.block_handlers.get(name).expect("Source not found.");
 
+    let rpc_url = config.networks.get(&source.network).expect("RPC url not found for network");
+    let rpc_url = Literal::string(&rpc_url);
+
     let step = Literal::u64_suffixed(source.step);
     let start_block = Literal::u64_suffixed(source.start_block);
     let network = Literal::string(&source.network);
@@ -63,6 +66,10 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
             fn network(&self) -> String {
                 #network
+            }
+
+            fn rpc_url(&self) -> String {
+                #rpc_url
             }
 
             fn start_block(&self) -> u64 {
@@ -150,6 +157,9 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
         execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
     };
 
+    let rpc_url = config.networks.get(&network).expect("RPC url not found for network");
+    let rpc_url = Literal::string(&rpc_url);
+
     let abi = Literal::string(&abi);
     let network = Literal::string(&network);
 
@@ -209,6 +219,10 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
 
             fn network(&self) - String {
                 String::from(#network)
+            }
+
+            fn rpc_url(&self) -> String {
+                #rpc_url
             }
 
             fn execution_mode(&self) -> ExecutionMode {

@@ -22,6 +22,7 @@ pub trait Handler {
     fn get_source(&self) -> String;
     fn is_template(&self) -> bool;
     fn network(&self) -> String;
+    fn rpc_url(&self) -> String;
     fn execution_mode(&self) -> ExecutionMode;
     fn get_event_signature(&self) -> String;
 }
@@ -32,6 +33,5 @@ pub struct HandlerConfig {
     pub step: u64,
     pub address: String,
     pub handler: HandleInstance,
-    pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
 }

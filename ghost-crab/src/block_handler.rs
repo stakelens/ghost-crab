@@ -1,3 +1,4 @@
+use crate::cache::manager::RPC_MANAGER;
 use crate::indexer::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
 use alloy::providers::Provider;
@@ -24,22 +25,26 @@ pub trait BlockHandler {
     async fn handle(&self, params: BlockContext);
     fn step(&self) -> u64;
     fn network(&self) -> String;
+    fn rpc_url(&self) -> String;
     fn start_block(&self) -> u64;
     fn execution_mode(&self) -> ExecutionMode;
 }
 
 pub struct BlockConfig {
     pub handler: BlockHandlerInstance,
-    pub provider: RootProvider<Http<Client>>,
     pub templates: TemplateManager,
 }
 
 pub async fn process_logs_block(
-    BlockConfig { handler, provider, templates }: BlockConfig,
+    BlockConfig { handler, templates }: BlockConfig,
 ) -> Result<(), TransportError> {
     let step = handler.step();
+    let network = handler.network();
+    let rpc_url = handler.rpc_url();
     let start_block = handler.start_block();
     let execution_mode = handler.execution_mode();
+
+    let provider = RPC_MANAGER.lock().await.get_or_create(network, rpc_url).await;
 
     let mut current_block = start_block;
     let mut latest_block_manager =
