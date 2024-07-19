@@ -1,31 +1,32 @@
 use alloy::providers::{Provider, RootProvider};
 use alloy::transports::http::{Client, Http};
-use std::time::{SystemTime, UNIX_EPOCH};
+use alloy::transports::TransportError;
+use std::time::{Duration, Instant};
 
 pub struct LatestBlockManager {
-    value: u64,
-    cache_duration_ms: u128,
-    last_fetch_ms: u128,
     provider: RootProvider<Http<Client>>,
+    cache_duration: Duration,
+    block_number: Option<u64>,
+    last_fetch: Instant,
 }
 
 impl LatestBlockManager {
-    pub fn new(cache_duration_ms: u128, provider: RootProvider<Http<Client>>) -> Self {
-        Self { value: 0, cache_duration_ms, last_fetch_ms: 0, provider }
+    pub fn new(provider: RootProvider<Http<Client>>, cache_duration: Duration) -> Self {
+        Self { provider, cache_duration, block_number: None, last_fetch: Instant::now() }
     }
 
-    pub async fn get(&mut self) -> u64 {
-        let now_ms = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-
-        if (now_ms - self.last_fetch_ms) < self.cache_duration_ms {
-            return self.value;
+    pub async fn get(&mut self) -> Result<u64, TransportError> {
+        if let Some(block_number) = self.block_number {
+            if self.last_fetch.elapsed() < self.cache_duration {
+                return Ok(block_number);
+            }
         }
 
-        let result = self.provider.get_block_number().await.unwrap();
-        self.value = result;
+        let block_number = self.provider.get_block_number().await?;
 
-        self.last_fetch_ms = now_ms;
+        self.block_number = Some(block_number);
+        self.last_fetch = Instant::now();
 
-        result
+        Ok(block_number)
     }
 }

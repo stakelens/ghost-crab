@@ -8,6 +8,7 @@ use alloy::transports::http::{Client, Http};
 use async_trait::async_trait;
 use ghost_crab_common::config::ExecutionMode;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub struct BlockContext {
     pub provider: RootProvider<Http<Client>>,
@@ -38,10 +39,17 @@ pub async fn process_logs_block(BlockConfig { handler, provider, templates }: Bl
     let execution_mode = handler.execution_mode();
 
     let mut current_block = start_block;
-    let mut latest_block_manager = LatestBlockManager::new(1000, provider.clone());
+    let mut latest_block_manager =
+        LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 
     loop {
-        let latest_block = latest_block_manager.get().await;
+        let latest_block = match latest_block_manager.get().await {
+            Ok(block_number) => block_number,
+            Err(error) => {
+                println!("Error fetching block number: {error}");
+                continue;
+            }
+        };
 
         if current_block >= latest_block {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;

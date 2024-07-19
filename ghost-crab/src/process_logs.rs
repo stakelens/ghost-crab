@@ -4,6 +4,7 @@ use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::rpc::types::eth::Filter;
 use ghost_crab_common::config::ExecutionMode;
+use std::time::Duration;
 
 pub async fn process_logs(
     HandlerConfig { start_block, step, address, handler, provider, templates }: HandlerConfig,
@@ -13,11 +14,18 @@ pub async fn process_logs(
     let address = address.parse::<Address>().unwrap();
 
     let execution_mode = handler.execution_mode();
-    let mut block_manager = LatestBlockManager::new(1000, provider.clone());
+    let mut latest_block_manager =
+        LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 
     loop {
         let mut end_block = current_block + step;
-        let latest_block = block_manager.get().await;
+        let latest_block = match latest_block_manager.get().await {
+            Ok(block_number) => block_number,
+            Err(error) => {
+                println!("Error fetching block number: {error}");
+                continue;
+            }
+        };
 
         if end_block > latest_block {
             end_block = latest_block;
