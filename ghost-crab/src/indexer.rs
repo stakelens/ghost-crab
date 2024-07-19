@@ -20,11 +20,7 @@ pub struct Template {
 
 impl TemplateManager {
     pub async fn start(&self, template: Template) {
-        let config = config::load();
-
-        let source = config.templates.get(&template.handler.get_source()).unwrap();
-
-        let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
+        let provider = RPC_MANAGER.lock().await.get(template.handler.network()).await;
 
         self.tx
             .send(HandlerConfig {
@@ -78,8 +74,8 @@ impl Indexer {
             return;
         }
 
+        let provider = RPC_MANAGER.lock().await.get(handler.network()).await;
         let source = self.config.data_sources.get(&handler.get_source()).unwrap();
-        let provider = RPC_MANAGER.lock().await.get(source.network.clone()).await;
 
         self.handlers.push(HandlerConfig {
             start_block: source.start_block,

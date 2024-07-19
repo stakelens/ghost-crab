@@ -21,6 +21,7 @@ pub trait Handler {
     async fn handle(&self, params: Context);
     fn get_source(&self) -> String;
     fn is_template(&self) -> bool;
+    fn network(&self) -> String;
     fn execution_mode(&self) -> ExecutionMode;
     fn get_event_signature(&self) -> String;
 }

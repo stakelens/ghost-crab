@@ -117,31 +117,26 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
     let (name, event_name) = get_source_and_event(metadata);
     let config = get_config();
 
-    let abi = if is_template {
-        config.templates.get(&name).expect("Source not found.").abi.clone()
+    let abi;
+    let network;
+    let execution_mode;
+
+    if is_template {
+        let source = config.templates.get(&name).expect("Source not found.");
+
+        abi = source.abi.clone();
+        network = source.network.clone();
+        execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
     } else {
-        config.data_sources.get(&name).expect("Source not found.").abi.clone()
+        let source = config.data_sources.get(&name).expect("Source not found.");
+
+        abi = source.abi.clone();
+        network = source.network.clone();
+        execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
     };
 
     let abi = Literal::string(&abi);
-
-    let execution_mode = if is_template {
-        if let Some(execution_mode) =
-            config.templates.get(&name).expect("Source not found.").execution_mode.clone()
-        {
-            execution_mode
-        } else {
-            ExecutionMode::Parallel
-        }
-    } else {
-        if let Some(execution_mode) =
-            config.data_sources.get(&name).expect("Source not found.").execution_mode.clone()
-        {
-            execution_mode
-        } else {
-            ExecutionMode::Parallel
-        }
-    };
+    let network = Literal::string(&network);
 
     let execution_mode = match execution_mode {
         ExecutionMode::Parallel => quote! {
@@ -195,6 +190,10 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
 
             fn is_template(&self) -> bool {
                 #is_template
+            }
+
+            fn network(&self) - String {
+                String::from(#network)
             }
 
             fn execution_mode(&self) -> ExecutionMode {
