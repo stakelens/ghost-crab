@@ -21,6 +21,7 @@ pub trait Handler {
     async fn handle(&self, params: Context);
     fn get_source(&self) -> String;
     fn is_template(&self) -> bool;
+    fn address(&self) -> Address;
     fn network(&self) -> String;
     fn rpc_url(&self) -> String;
     fn execution_mode(&self) -> ExecutionMode;
@@ -31,7 +32,7 @@ pub trait Handler {
 pub struct HandlerConfig {
     pub start_block: u64,
     pub step: u64,
-    pub address: String,
+    pub address: Address,
     pub handler: HandleInstance,
     pub templates: TemplateManager,
 }

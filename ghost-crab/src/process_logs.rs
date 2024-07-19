@@ -1,7 +1,6 @@
 use crate::cache::manager::RPC_MANAGER;
 use crate::handler::{Context, HandlerConfig};
 use crate::latest_block_manager::LatestBlockManager;
-use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::rpc::types::eth::Filter;
 use alloy::transports::TransportError;
@@ -18,8 +17,6 @@ pub async fn process_logs(
 
     let provider = RPC_MANAGER.lock().await.get_or_create(network, rpc_url).await;
     let mut current_block = start_block;
-    let address = address.parse::<Address>().unwrap();
-
     let mut latest_block_manager =
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 

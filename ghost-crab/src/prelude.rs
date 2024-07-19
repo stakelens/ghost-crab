@@ -19,4 +19,5 @@ pub use crate::indexer;
 pub use crate::indexer::Template;
 pub use crate::process_logs;
 pub use alloy::primitives::Address;
+pub use alloy::primitives::address;
 pub use alloy::providers::Provider;

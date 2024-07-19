@@ -3,6 +3,7 @@ use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
 use crate::process_logs::process_logs;
 use crate::server::Server;
+use alloy::primitives::Address;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
@@ -13,7 +14,7 @@ pub struct TemplateManager {
 
 pub struct Template {
     pub start_block: u64,
-    pub address: String,
+    pub address: Address,
     pub handler: HandleInstance,
 }
 
@@ -70,10 +71,11 @@ impl Indexer {
         }
 
         let source = self.config.data_sources.get(&handler.get_source()).unwrap();
+        let address = handler.address();
 
         self.handlers.push(HandlerConfig {
             start_block: source.start_block,
-            address: source.address.clone(),
+            address,
             step: 10_000,
             handler,
             templates: self.templates.clone(),

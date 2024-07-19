@@ -142,6 +142,7 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
     let abi;
     let network;
     let execution_mode;
+    let address;
 
     if is_template {
         let source = config.templates.get(&name).expect("Source not found.");
@@ -149,12 +150,21 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
         abi = source.abi.clone();
         network = source.network.clone();
         execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
+        address = quote! {
+            Address::ZERO
+        }
     } else {
         let source = config.data_sources.get(&name).expect("Source not found.");
 
         abi = source.abi.clone();
         network = source.network.clone();
         execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
+
+        let address_literal = Literal::string(&source.address);
+
+        address = quote! {
+            address!(#address_literal)
+        }
     };
 
     let rpc_url = config.networks.get(&network).expect("RPC url not found for network");
@@ -215,6 +225,10 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
 
             fn is_template(&self) -> bool {
                 #is_template
+            }
+
+            fn address(&self) -> Address {
+                #address
             }
 
             fn network(&self) - String {
