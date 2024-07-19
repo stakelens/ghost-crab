@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.2...ghost-crab-macros-v0.1.3) - 2024-07-19
+
+### Other
+- Adds step, network, start_block and execution_mode to "block_handler"
+- Adds "network" to handler
+- Adds execution_mode to handler
+- Adds "ghost_crab_common" to share the config struct
+- Adds "template" proc-macro and renames "handle" to "event_handler"
+
 ## [0.1.2](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.1...ghost-crab-macros-v0.1.2) - 2024-07-13
 
 ### Other

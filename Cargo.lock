@@ -1276,7 +1276,7 @@ dependencies = [
 
 [[package]]
 name = "ghost-crab"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "alloy",
  "async-trait",
@@ -1308,7 +1308,7 @@ dependencies = [
 
 [[package]]
 name = "ghost-crab-macros"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "ghost-crab-common",
  "proc-macro2",
