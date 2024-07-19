@@ -1,42 +1,10 @@
 extern crate proc_macro;
-use std::fs;
-
+use ghost_crab_common::config::Config;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
 use quote::{format_ident, quote};
+use std::fs;
 use syn::{parse_macro_input, ItemFn};
-
-// TODO: Share this code
-use serde::Deserialize;
-use std::collections::HashMap;
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Template {
-    abi: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct DataSource {
-    abi: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-struct BlockHandler {
-    start_block: u64,
-    network: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Config {
-    data_sources: HashMap<String, DataSource>,
-    templates: HashMap<String, Template>,
-    block_handlers: HashMap<String, BlockHandler>,
-}
-//
 
 #[proc_macro_attribute]
 pub fn event_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {

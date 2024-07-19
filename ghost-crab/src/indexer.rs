@@ -2,8 +2,9 @@ use crate::block_handler::{process_logs_block, BlockConfig, BlockHandlerInstance
 use crate::cache::manager::RPC_MANAGER;
 use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
-use crate::process_logs::{process_logs, ExecutionMode};
+use crate::process_logs::process_logs;
 use crate::server::Server;
+use ghost_crab_common::config::ExecutionMode;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 #[derive(Clone)]

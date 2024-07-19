@@ -3,14 +3,7 @@ use crate::latest_block_manager::LatestBlockManager;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::rpc::types::eth::Filter;
-use serde::Deserialize;
-
-#[derive(Clone, Copy, Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
-pub enum ExecutionMode {
-    Parallel,
-    Serial,
-}
+use ghost_crab_common::config::ExecutionMode;
 
 pub async fn process_logs(
     HandlerConfig {

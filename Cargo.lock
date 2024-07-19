@@ -1283,6 +1283,7 @@ dependencies = [
  "blake3",
  "bytes",
  "dotenvy",
+ "ghost-crab-common",
  "ghost-crab-macros",
  "http-body-util",
  "hyper",
@@ -1296,9 +1297,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ghost-crab-common"
+version = "0.1.0"
+dependencies = [
+ "dotenvy",
+ "once_cell",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ghost-crab-macros"
 version = "0.1.2"
 dependencies = [
+ "ghost-crab-common",
  "proc-macro2",
  "quote",
  "serde",

@@ -1,12 +1,12 @@
 use crate::indexer::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
-use crate::process_logs::ExecutionMode;
 use alloy::providers::Provider;
 use alloy::providers::RootProvider;
 use alloy::rpc::types::eth::Block;
 use alloy::rpc::types::eth::BlockNumberOrTag;
 use alloy::transports::http::{Client, Http};
 use async_trait::async_trait;
+use ghost_crab_common::config::ExecutionMode;
 use std::sync::Arc;
 
 pub struct BlockContext {

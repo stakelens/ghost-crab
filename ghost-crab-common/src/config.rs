@@ -4,7 +4,12 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::{env, fs};
 
-use crate::process_logs::ExecutionMode;
+#[derive(Clone, Copy, Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum ExecutionMode {
+    Parallel,
+    Serial,
+}
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
