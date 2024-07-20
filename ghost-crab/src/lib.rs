@@ -5,7 +5,6 @@ pub mod indexer;
 pub mod latest_block_manager;
 pub mod prelude;
 pub mod process_logs;
-mod server;
 
 pub use indexer::Indexer;
 pub use ghost_crab_common::config;

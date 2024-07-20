@@ -1,7 +1,6 @@
 use crate::block_handler::{process_logs_block, BlockConfig, BlockHandlerInstance};
 use crate::handler::{HandleInstance, HandlerConfig};
 use crate::process_logs::process_logs;
-use crate::server::Server;
 use alloy::primitives::Address;
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::{self, Receiver, Sender};
@@ -47,9 +46,6 @@ impl Default for Indexer {
 impl Indexer {
     pub fn new() -> Indexer {
         let (tx, rx) = mpsc::channel::<HandlerConfig>(1);
-
-        let server = Server::new(3000);
-        server.start();
 
         Indexer {
             handlers: Vec::new(),
