@@ -24,21 +24,24 @@ pub struct RpcWithCache {
 }
 
 impl RpcWithCache {
-    pub fn new(network: String, rpc_url: String, port: u16) -> Self {
-        let current_dir = std::env::current_dir().unwrap();
-        let cache = Arc::new(DB::open_default(current_dir.join("cache").join(network)).unwrap());
-
-        Self { rpc_url: Arc::new(rpc_url), cache, port }
+    pub fn new(
+        network: String,
+        rpc_url: String,
+        port: u16,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let current_dir = std::env::current_dir()?;
+        let cache = Arc::new(DB::open_default(current_dir.join("cache").join(network))?);
+        Ok(Self { rpc_url: Arc::new(rpc_url), cache, port })
     }
 
-    pub async fn run(&self) {
+    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         let addr: SocketAddr = ([127, 0, 0, 1], self.port).into();
-        let listener = TcpListener::bind(addr).await.unwrap();
+        let listener = TcpListener::bind(addr).await?;
         let https = HttpsConnector::new();
         let client = Client::builder(TokioExecutor::new()).build::<_, Full<Bytes>>(https);
 
         loop {
-            let (tcp, _) = listener.accept().await.unwrap();
+            let (tcp, _) = listener.accept().await?;
             let io = TokioIo::new(tcp);
             let db = Arc::clone(&self.cache);
             let rpc_url = Arc::clone(&self.rpc_url);
