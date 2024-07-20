@@ -28,12 +28,3 @@ pub trait Handler {
     fn execution_mode(&self) -> ExecutionMode;
     fn event_signature(&self) -> String;
 }
-
-#[derive(Clone)]
-pub struct HandlerConfig {
-    pub start_block: u64,
-    pub step: u64,
-    pub address: Address,
-    pub handler: HandleInstance,
-    pub templates: TemplateManager,
-}

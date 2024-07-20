@@ -1,21 +1,30 @@
-use crate::cache::manager::RPC_MANAGER;
-use crate::handler::{Context, HandlerConfig};
+use crate::handler::{Context, HandleInstance};
+use crate::indexer::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
-use alloy::providers::Provider;
+use alloy::primitives::Address;
+use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::Filter;
+use alloy::transports::http::{Client, Http};
 use alloy::transports::TransportError;
 use ghost_crab_common::config::ExecutionMode;
 use std::time::Duration;
 
+#[derive(Clone)]
+pub struct ProcessEventsInput {
+    pub start_block: u64,
+    pub address: Address,
+    pub step: u64,
+    pub handler: HandleInstance,
+    pub templates: TemplateManager,
+    pub provider: RootProvider<Http<Client>>,
+}
+
 pub async fn process_logs(
-    HandlerConfig { start_block, step, address, handler, templates }: HandlerConfig,
+    ProcessEventsInput { start_block, step, address, handler, templates, provider }: ProcessEventsInput,
 ) -> Result<(), TransportError> {
-    let network = handler.network();
-    let rpc_url = handler.rpc_url();
     let execution_mode = handler.execution_mode();
     let event_signature = handler.event_signature();
 
-    let provider = RPC_MANAGER.lock().await.get_or_create(network, rpc_url).await;
     let mut current_block = start_block;
     let mut latest_block_manager =
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));

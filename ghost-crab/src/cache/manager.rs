@@ -2,13 +2,7 @@ use super::rpc_proxy::RpcWithCache;
 use alloy::providers::ProviderBuilder;
 use alloy::providers::RootProvider;
 use alloy::transports::http::{Client, Http};
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
-pub static RPC_MANAGER: Lazy<Arc<Mutex<RPCManager>>> =
-    Lazy::new(|| Arc::new(Mutex::new(RPCManager::new())));
 
 pub struct RPCManager {
     current_port: u16,

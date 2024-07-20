@@ -1289,7 +1289,6 @@ dependencies = [
  "hyper",
  "hyper-tls",
  "hyper-util",
- "once_cell",
  "rocksdb",
  "serde",
  "serde_json",

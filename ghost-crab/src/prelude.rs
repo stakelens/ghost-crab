@@ -1,5 +1,4 @@
-pub use crate::cache::manager::RPC_MANAGER;
-pub use crate::handler::{Context, Handler, HandlerConfig};
+pub use crate::handler::{Context, Handler};
 pub use alloy;
 pub use alloy::{
     sol,
@@ -18,6 +17,6 @@ pub use crate::config;
 pub use crate::indexer;
 pub use crate::indexer::Template;
 pub use crate::process_logs;
-pub use alloy::primitives::Address;
 pub use alloy::primitives::address;
+pub use alloy::primitives::Address;
 pub use alloy::providers::Provider;
