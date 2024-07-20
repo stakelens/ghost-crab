@@ -15,4 +15,4 @@ quote = "1.0.36"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 syn = { version = "2.0.66", features = ["full"] }
-ghost-crab-common = { path = "../ghost-crab-common" }
+ghost-crab-common = { path = "../ghost-crab-common", version = "0.2.0" }
