@@ -1,5 +1,4 @@
 use crate::block_handler::{process_logs_block, BlockConfig, BlockHandlerInstance};
-use crate::config;
 use crate::handler::{HandleInstance, HandlerConfig};
 use crate::process_logs::process_logs;
 use crate::server::Server;
@@ -33,7 +32,6 @@ impl TemplateManager {
 }
 
 pub struct Indexer {
-    config: config::Config,
     handlers: Vec<HandlerConfig>,
     block_handlers: Vec<BlockConfig>,
     rx: Receiver<HandlerConfig>,
@@ -48,20 +46,16 @@ impl Default for Indexer {
 
 impl Indexer {
     pub fn new() -> Indexer {
-        let config = config::load();
         let (tx, rx) = mpsc::channel::<HandlerConfig>(1);
-
-        let templates = TemplateManager { tx };
 
         let server = Server::new(3000);
         server.start();
 
         Indexer {
-            config: config.clone(),
             handlers: Vec::new(),
             block_handlers: Vec::new(),
+            templates: TemplateManager { tx },
             rx,
-            templates,
         }
     }
 
