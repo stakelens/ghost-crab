@@ -15,12 +15,6 @@ pub struct RPCManager {
     rpcs: HashMap<String, RootProvider<Http<Client>>>,
 }
 
-impl Default for RPCManager {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RPCManager {
     pub fn new() -> Self {
         RPCManager { rpcs: HashMap::new(), current_port: 3001 }

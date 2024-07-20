@@ -37,12 +37,6 @@ pub struct Indexer {
     templates: TemplateManager,
 }
 
-impl Default for Indexer {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Indexer {
     pub fn new() -> Indexer {
         let (tx, rx) = mpsc::channel::<HandlerConfig>(1);
