@@ -1,25 +1,49 @@
-use crate::handler::{Context, HandleInstance};
 use crate::indexer::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
 use alloy::primitives::Address;
 use alloy::providers::{Provider, RootProvider};
 use alloy::rpc::types::eth::Filter;
+use alloy::rpc::types::eth::Log;
 use alloy::transports::http::{Client, Http};
 use alloy::transports::TransportError;
+use async_trait::async_trait;
 use ghost_crab_common::config::ExecutionMode;
+use std::sync::Arc;
 use std::time::Duration;
+
+pub struct EventContext {
+    pub log: Log,
+    pub provider: RootProvider<Http<Client>>,
+    pub templates: TemplateManager,
+    pub contract_address: Address,
+}
+
+pub type EventHandlerInstance = Arc<Box<(dyn EventHandler + Send + Sync)>>;
+
+#[async_trait]
+pub trait EventHandler {
+    async fn handle(&self, params: EventContext);
+    fn get_source(&self) -> String;
+    fn is_template(&self) -> bool;
+    fn start_block(&self) -> u64;
+    fn address(&self) -> Address;
+    fn network(&self) -> String;
+    fn rpc_url(&self) -> String;
+    fn execution_mode(&self) -> ExecutionMode;
+    fn event_signature(&self) -> String;
+}
 
 #[derive(Clone)]
 pub struct ProcessEventsInput {
     pub start_block: u64,
     pub address: Address,
     pub step: u64,
-    pub handler: HandleInstance,
+    pub handler: EventHandlerInstance,
     pub templates: TemplateManager,
     pub provider: RootProvider<Http<Client>>,
 }
 
-pub async fn process_logs(
+pub async fn process_events(
     ProcessEventsInput { start_block, step, address, handler, templates, provider }: ProcessEventsInput,
 ) -> Result<(), TransportError> {
     let execution_mode = handler.execution_mode();
@@ -63,7 +87,12 @@ pub async fn process_logs(
 
                     tokio::spawn(async move {
                         handler
-                            .handle(Context { log, provider, templates, contract_address: address })
+                            .handle(EventContext {
+                                log,
+                                provider,
+                                templates,
+                                contract_address: address,
+                            })
                             .await;
                     });
                 }
@@ -74,7 +103,12 @@ pub async fn process_logs(
                     let provider = provider.clone();
 
                     handler
-                        .handle(Context { log, provider, templates, contract_address: address })
+                        .handle(EventContext {
+                            log,
+                            provider,
+                            templates,
+                            contract_address: address,
+                        })
                         .await;
                 }
             }

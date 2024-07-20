@@ -1,4 +1,4 @@
-pub use crate::handler::{Context, Handler};
+pub use crate::event_handler::{EventContext, EventHandler};
 pub use alloy;
 pub use alloy::{
     sol,
@@ -16,7 +16,6 @@ pub use crate::cache;
 pub use crate::config;
 pub use crate::indexer;
 pub use crate::indexer::Template;
-pub use crate::process_logs;
 pub use alloy::primitives::address;
 pub use alloy::primitives::Address;
 pub use alloy::providers::Provider;

@@ -35,7 +35,7 @@ pub struct ProcessBlocksInput {
     pub provider: RootProvider<Http<Client>>,
 }
 
-pub async fn process_logs_block(
+pub async fn process_blocks(
     ProcessBlocksInput { handler, templates, provider }: ProcessBlocksInput,
 ) -> Result<(), TransportError> {
     let step = handler.step();

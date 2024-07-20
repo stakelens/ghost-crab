@@ -204,13 +204,13 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
         pub struct #fn_name;
 
         impl #fn_name {
-            pub fn new() -> Arc<Box<(dyn Handler + Send + Sync)>> {
+            pub fn new() -> Arc<Box<(dyn EventHandler + Send + Sync)>> {
                 Arc::new(Box::new(#fn_name {}))
             }
         }
 
         #[async_trait]
-        impl Handler for #fn_name {
+        impl EventHandler for #fn_name {
             async fn handle(&self, #fn_args) {
                 let decoded_log = #ctx
                     .log
