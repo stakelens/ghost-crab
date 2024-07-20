@@ -1,7 +1,3 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
-use std::sync::Arc;
-
 use blake3;
 use bytes::Bytes;
 use http_body_util::BodyExt;
@@ -15,6 +11,8 @@ use hyper_util::rt::TokioIo;
 use hyper_util::rt::TokioTimer;
 use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use rocksdb::DB;
+use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 
 pub struct RpcWithCache {
@@ -98,20 +96,18 @@ async fn handler(
     rpc_url: Arc<String>,
     db: Arc<DB>,
     client: Client<HttpsConnector<HttpConnector>, Full<Bytes>>,
-) -> Result<Response<Full<Bytes>>, Infallible> {
-    let request_received = request.collect().await.unwrap().to_bytes();
+) -> Result<Response<Full<Bytes>>, hyper::Error> {
+    let request_received = request.collect().await?.to_bytes();
 
     if contains_invalid_word(&request_received) {
         let rpc_request = hyper::Request::builder()
             .method("POST")
             .uri(rpc_url.as_str())
             .header("Content-Type", "application/json")
-            .body(Full::new(request_received.clone()))
+            .body(Full::new(request_received))
             .unwrap();
 
-        let rpc_response =
-            client.request(rpc_request).await.unwrap().collect().await.unwrap().to_bytes();
-
+        let rpc_response = client.request(rpc_request).await.unwrap().collect().await?.to_bytes();
         return Ok(Response::new(Full::new(rpc_response)));
     }
 
@@ -129,17 +125,17 @@ async fn handler(
         .method("POST")
         .uri(rpc_url.as_str())
         .header("Content-Type", "application/json")
-        .body(Full::new(request_received.clone()))
+        .body(Full::new(request_received))
         .unwrap();
 
-    let rpc_response =
-        client.request(rpc_request).await.unwrap().collect().await.unwrap().to_bytes();
-
+    let rpc_response = client.request(rpc_request).await.unwrap().collect().await?.to_bytes();
     let rpc_response_string = String::from_utf8_lossy(&rpc_response);
 
     // Avoid caching errors
     if !rpc_response_string.contains(r#""error":{"code":-"#) {
-        db.put(request_hash, rpc_response_string.to_string()).unwrap();
+        if let Err(err) = db.put(request_hash, rpc_response_string.to_string()) {
+            println!("WARNING: Error saving value to cache {err}");
+        };
     }
 
     Ok(Response::new(Full::new(rpc_response)))
