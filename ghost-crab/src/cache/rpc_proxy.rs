@@ -21,18 +21,28 @@ pub struct RpcWithCache {
     port: u16,
 }
 
+#[derive(Debug)]
+pub enum Error {
+    DB(rocksdb::Error),
+    CacheFileNotFound(std::io::Error),
+}
+
+type Result<T> = core::result::Result<T, Error>;
+
+fn load_cache(network: &str) -> Result<DB> {
+    let current_dir = std::env::current_dir().map_err(|e| Error::CacheFileNotFound(e))?;
+    let cache_path = current_dir.join("cache").join(network);
+    let db = DB::open_default(cache_path).map_err(|e| Error::DB(e))?;
+
+    Ok(db)
+}
+
 impl RpcWithCache {
-    pub fn new(
-        network: String,
-        rpc_url: String,
-        port: u16,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let current_dir = std::env::current_dir()?;
-        let cache = Arc::new(DB::open_default(current_dir.join("cache").join(network))?);
-        Ok(Self { rpc_url: Arc::new(rpc_url), cache, port })
+    pub fn new(network: &str, rpc_url: String, port: u16) -> Result<Self> {
+        Ok(Self { rpc_url: Arc::new(rpc_url), cache: Arc::new(load_cache(network)?), port })
     }
 
-    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run(&self) -> core::result::Result<(), Box<dyn std::error::Error>> {
         let addr: SocketAddr = ([127, 0, 0, 1], self.port).into();
         let listener = TcpListener::bind(addr).await?;
         let https = HttpsConnector::new();
@@ -96,7 +106,7 @@ async fn handler(
     rpc_url: Arc<String>,
     db: Arc<DB>,
     client: Client<HttpsConnector<HttpConnector>, Full<Bytes>>,
-) -> Result<Response<Full<Bytes>>, hyper::Error> {
+) -> core::result::Result<Response<Full<Bytes>>, hyper::Error> {
     let request_received = request.collect().await?.to_bytes();
 
     if contains_invalid_word(&request_received) {
