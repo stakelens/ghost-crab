@@ -1,40 +1,37 @@
-use super::rpc_proxy::RpcWithCache;
 use alloy::providers::ProviderBuilder;
 use alloy::providers::RootProvider;
+use alloy::rpc::client::ClientBuilder;
 use alloy::transports::http::{Client, Http};
 use std::collections::HashMap;
 
+use super::cache::load_cache;
+use super::cache_layer::CacheLayer;
+use super::cache_layer::CacheService;
+
+pub type CacheProvider = RootProvider<CacheService<Http<Client>>>;
+
 pub struct RPCManager {
-    current_port: u16,
-    rpcs: HashMap<String, RootProvider<Http<Client>>>,
+    rpcs: HashMap<String, CacheProvider>,
 }
 
 impl RPCManager {
     pub fn new() -> Self {
-        RPCManager { rpcs: HashMap::new(), current_port: 3001 }
+        RPCManager { rpcs: HashMap::new() }
     }
 
-    pub async fn get_or_create(
-        &mut self,
-        network: String,
-        rpc_url: String,
-    ) -> RootProvider<Http<Client>> {
+    pub async fn get_or_create(&mut self, network: String, rpc_url: String) -> CacheProvider {
         if let Some(provider) = self.rpcs.get(&rpc_url) {
             return provider.clone();
         }
 
-        let provider = ProviderBuilder::new()
-            .on_http(format!("http://localhost:{}", self.current_port).parse().unwrap());
+        let cache = load_cache(&network).unwrap();
+        let cache_layer = CacheLayer::new(&network, cache);
+
+        let client = ClientBuilder::default().layer(cache_layer).http(rpc_url.parse().unwrap());
+        let provider = ProviderBuilder::new().on_client(client);
 
         self.rpcs.insert(rpc_url.clone(), provider.clone());
-        let rpc_with_cache =
-            RpcWithCache::new(&network, rpc_url.clone(), self.current_port).unwrap();
 
-        tokio::spawn(async move {
-            rpc_with_cache.run().await.unwrap();
-        });
-
-        self.current_port += 1;
         provider
     }
 }

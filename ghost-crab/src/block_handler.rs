@@ -1,10 +1,9 @@
+use crate::cache::manager::CacheProvider;
 use crate::indexer::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
 use alloy::providers::Provider;
-use alloy::providers::RootProvider;
 use alloy::rpc::types::eth::Block;
 use alloy::rpc::types::eth::BlockNumberOrTag;
-use alloy::transports::http::{Client, Http};
 use alloy::transports::TransportError;
 use async_trait::async_trait;
 use ghost_crab_common::config::ExecutionMode;
@@ -12,7 +11,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub struct BlockContext {
-    pub provider: RootProvider<Http<Client>>,
+    pub provider: CacheProvider,
     pub templates: TemplateManager,
     pub block: Block,
 }
@@ -32,7 +31,7 @@ pub trait BlockHandler {
 pub struct ProcessBlocksInput {
     pub handler: BlockHandlerInstance,
     pub templates: TemplateManager,
-    pub provider: RootProvider<Http<Client>>,
+    pub provider: CacheProvider,
 }
 
 pub async fn process_blocks(

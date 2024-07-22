@@ -1,10 +1,10 @@
+use crate::cache::manager::CacheProvider;
 use crate::indexer::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
 use alloy::primitives::Address;
-use alloy::providers::{Provider, RootProvider};
+use alloy::providers::Provider;
 use alloy::rpc::types::eth::Filter;
 use alloy::rpc::types::eth::Log;
-use alloy::transports::http::{Client, Http};
 use alloy::transports::TransportError;
 use async_trait::async_trait;
 use ghost_crab_common::config::ExecutionMode;
@@ -13,7 +13,7 @@ use std::time::Duration;
 
 pub struct EventContext {
     pub log: Log,
-    pub provider: RootProvider<Http<Client>>,
+    pub provider: CacheProvider,
     pub templates: TemplateManager,
     pub contract_address: Address,
 }
@@ -40,7 +40,7 @@ pub struct ProcessEventsInput {
     pub step: u64,
     pub handler: EventHandlerInstance,
     pub templates: TemplateManager,
-    pub provider: RootProvider<Http<Client>>,
+    pub provider: CacheProvider,
 }
 
 pub async fn process_events(

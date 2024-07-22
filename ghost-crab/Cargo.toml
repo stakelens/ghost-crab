@@ -14,6 +14,7 @@ alloy = { version = "0.1.0", features = [
     "contract",
     "provider-http",
     "rpc-types-eth",
+    "json-rpc",
 ] }
 tokio = { version = "1.37.0", features = ["full"] }
 dotenvy = "0.15"
@@ -29,3 +30,4 @@ ghost-crab-common = { path = "../ghost-crab-common", version = "0.2.0" }
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 rocksdb = "0.22.0"
+tower = "0.4.13"
