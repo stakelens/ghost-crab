@@ -13,12 +13,12 @@ use std::time::Duration;
 pub struct BlockContext {
     pub provider: CacheProvider,
     pub templates: TemplateManager,
-    pub block: u64,
+    pub block_number: u64,
 }
 
 impl BlockContext {
     pub async fn block(&self) -> Result<Option<Block>, TransportError> {
-        self.provider.get_block_by_number(BlockNumberOrTag::Number(self.block), false).await
+        self.provider.get_block_by_number(BlockNumberOrTag::Number(self.block_number), false).await
     }
 }
 
@@ -67,7 +67,7 @@ pub async fn process_blocks(
 
                 tokio::spawn(async move {
                     handler
-                        .handle(BlockContext { provider, templates, block: current_block })
+                        .handle(BlockContext { provider, templates, block_number: current_block })
                         .await;
                 });
             }
@@ -76,7 +76,9 @@ pub async fn process_blocks(
                 let provider = provider.clone();
                 let templates = templates.clone();
 
-                handler.handle(BlockContext { provider, templates, block: current_block }).await;
+                handler
+                    .handle(BlockContext { provider, templates, block_number: current_block })
+                    .await;
             }
         }
 
