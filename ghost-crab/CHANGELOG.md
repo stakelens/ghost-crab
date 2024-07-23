@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/stakelens/ghost-crab/compare/ghost-crab-v0.4.0...ghost-crab-v0.5.0) - 2024-07-23
+
+### Added
+- Now, we do not prefetch the block in the block handlers. To get the current block you have to call `ctx.block()` instead of `ctx.block`
+
+### Other
+- Rename BlockContext.block -> BlockContext.block_number
+
 ## [0.4.0](https://github.com/stakelens/ghost-crab/compare/ghost-crab-v0.3.1...ghost-crab-v0.4.0) - 2024-07-23
 
 ### Other
