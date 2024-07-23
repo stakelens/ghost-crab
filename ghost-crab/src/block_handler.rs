@@ -13,7 +13,13 @@ use std::time::Duration;
 pub struct BlockContext {
     pub provider: CacheProvider,
     pub templates: TemplateManager,
-    pub block: Block,
+    pub block: u64,
+}
+
+impl BlockContext {
+    pub async fn block(&self) -> Result<Option<Block>, TransportError> {
+        self.provider.get_block_by_number(BlockNumberOrTag::Number(self.block), false).await
+    }
 }
 
 pub type BlockHandlerInstance = Arc<Box<(dyn BlockHandler + Send + Sync)>>;
@@ -53,11 +59,6 @@ pub async fn process_blocks(
             continue;
         }
 
-        let block = provider
-            .get_block_by_number(BlockNumberOrTag::Number(current_block), false)
-            .await?
-            .unwrap();
-
         match execution_mode {
             ExecutionMode::Parallel => {
                 let handler = handler.clone();
@@ -65,7 +66,9 @@ pub async fn process_blocks(
                 let templates = templates.clone();
 
                 tokio::spawn(async move {
-                    handler.handle(BlockContext { provider, templates, block }).await;
+                    handler
+                        .handle(BlockContext { provider, templates, block: current_block })
+                        .await;
                 });
             }
             ExecutionMode::Serial => {
@@ -73,7 +76,7 @@ pub async fn process_blocks(
                 let provider = provider.clone();
                 let templates = templates.clone();
 
-                handler.handle(BlockContext { provider, templates, block }).await;
+                handler.handle(BlockContext { provider, templates, block: current_block }).await;
             }
         }
 
