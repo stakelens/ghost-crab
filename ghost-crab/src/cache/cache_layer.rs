@@ -2,7 +2,6 @@ use alloy::rpc::json_rpc::{
     Id, RequestPacket, Response, ResponsePacket, ResponsePayload, SerializedRequest,
 };
 use alloy::transports::{RpcError, TransportError, TransportErrorKind};
-use core::str;
 use rocksdb::DB;
 use serde_json::value::RawValue;
 use std::{
@@ -15,13 +14,12 @@ use std::{
 use tower::{Layer, Service};
 
 pub struct CacheLayer {
-    network: String,
     db: Arc<DB>,
 }
 
 impl CacheLayer {
-    pub fn new(network: &str, db: DB) -> Self {
-        Self { network: network.into(), db: Arc::new(db) }
+    pub fn new(db: DB) -> Self {
+        Self { db: Arc::new(db) }
     }
 }
 
@@ -29,28 +27,17 @@ impl<S> Layer<S> for CacheLayer {
     type Service = CacheService<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        CacheService { inner, network: self.network.clone(), db: Arc::clone(&self.db) }
+        CacheService { inner, db: Arc::clone(&self.db) }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct CacheService<S> {
     inner: S,
-    network: String,
     db: Arc<DB>,
 }
 
 impl<S> CacheService<S> {
-    fn cache_get(&self, key: &str) -> Option<Vec<u8>> {
-        let key = self.network.clone() + key;
-
-        if let Ok(result) = self.db.get(key) {
-            return result;
-        }
-
-        None
-    }
-
     fn convert_to_response(
         &self,
         raw_response: Vec<u8>,
@@ -128,7 +115,7 @@ where
                 let id_new = "\"id\":0";
                 let raw_request = raw_request.replace(&id_old, id_new);
 
-                if let Some(raw_data) = self.cache_get(&raw_request) {
+                if let Ok(Some(raw_data)) = self.db.get(&raw_request) {
                     return self.convert_to_response(raw_data);
                 }
 

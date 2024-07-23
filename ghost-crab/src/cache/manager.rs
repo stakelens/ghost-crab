@@ -25,7 +25,7 @@ impl RPCManager {
         }
 
         let cache = load_cache(&network).unwrap();
-        let cache_layer = CacheLayer::new(&network, cache);
+        let cache_layer = CacheLayer::new(cache);
 
         let client = ClientBuilder::default().layer(cache_layer).http(rpc_url.parse().unwrap());
         let provider = ProviderBuilder::new().on_client(client);
