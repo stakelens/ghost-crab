@@ -5,6 +5,7 @@ pub use alloy::{
     sol_types::{SolEvent, SolEventInterface},
 };
 pub use async_trait::async_trait;
+pub use config::ExecutionMode;
 pub use ghost_crab_macros::block_handler;
 pub use ghost_crab_macros::event_handler;
 pub use ghost_crab_macros::template;

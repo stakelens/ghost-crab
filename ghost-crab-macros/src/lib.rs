@@ -65,11 +65,11 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             fn network(&self) -> String {
-                #network
+                String::from(#network)
             }
 
             fn rpc_url(&self) -> String {
-                #rpc_url
+                String::from(#rpc_url)
             }
 
             fn start_block(&self) -> u64 {
@@ -162,7 +162,7 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
         network = source.network.clone();
         execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
 
-        let address_literal = Literal::string(&source.address);
+        let address_literal = Literal::string(&source.address[2..]);
 
         address = quote! {
             address!(#address_literal)
@@ -238,12 +238,12 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
                 #address
             }
 
-            fn network(&self) - String {
+            fn network(&self) -> String {
                 String::from(#network)
             }
 
             fn rpc_url(&self) -> String {
-                #rpc_url
+                String::from(#rpc_url)
             }
 
             fn execution_mode(&self) -> ExecutionMode {
