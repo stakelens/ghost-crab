@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/stakelens/ghost-crab/compare/ghost-crab-v0.3.1...ghost-crab-v0.4.0) - 2024-07-23
+
+### Other
+- Remove network from cache layer
+- Add cache layer to the provider and remove the rpc proxy server
+
 ## [0.3.1](https://github.com/stakelens/ghost-crab/compare/ghost-crab-v0.3.0...ghost-crab-v0.3.1) - 2024-07-21
 
 ### Other
