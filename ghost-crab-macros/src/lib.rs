@@ -1,9 +1,8 @@
 extern crate proc_macro;
-use ghost_crab_common::config::{Config, ExecutionMode};
+use ghost_crab_common::config::{self, ExecutionMode};
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
 use quote::{format_ident, quote};
-use std::fs;
 use syn::{parse_macro_input, ItemFn};
 
 #[proc_macro_attribute]
@@ -25,7 +24,7 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
         panic!("The source is missing");
     }
 
-    let config = get_config();
+    let config = config::load().unwrap();
     let source = config.block_handlers.get(name).expect("Source not found.");
 
     let rpc_url = config.networks.get(&source.network).expect("RPC url not found for network");
@@ -83,14 +82,6 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     })
 }
 
-fn get_config() -> Config {
-    let current_dir = std::env::current_dir().expect("Current directory not found");
-    let config_json_path = current_dir.join("config.json");
-    let content = fs::read_to_string(config_json_path).expect("Error reading config file");
-    let config: Config = serde_json::from_str(&content).expect("Error parsing config file");
-    return config;
-}
-
 fn get_source_and_event(metadata: TokenStream) -> (String, Ident) {
     let metadata_string = metadata.to_string();
     let mut metadata_split = metadata_string.split('.');
@@ -137,7 +128,7 @@ fn get_context_identifier(parsed: ItemFn) -> Ident {
 
 fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) -> TokenStream {
     let (name, event_name) = get_source_and_event(metadata);
-    let config = get_config();
+    let config = config::load().unwrap();
 
     let abi;
     let network;
