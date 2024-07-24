@@ -76,7 +76,7 @@ fn contains_invalid_word(input: &[u8]) -> bool {
 }
 
 fn cacheable_request(request: &SerializedRequest) -> bool {
-    if !matches!(request.method(), "eth_getBlockByNumber") {
+    if !matches!(request.method(), "eth_getBlockByNumber" | "eth_getLogs" | "eth_call") {
         return false;
     }
 
