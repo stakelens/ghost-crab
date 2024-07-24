@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.3...ghost-crab-macros-v0.1.4) - 2024-07-23
+
+### Added
+- Add config::load
+
+### Fixed
+- Fix macro invalid address error
+
 ## [0.1.3](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.2...ghost-crab-macros-v0.1.3) - 2024-07-19
 
 ### Other
