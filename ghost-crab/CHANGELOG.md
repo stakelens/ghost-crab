@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/stakelens/ghost-crab/compare/ghost-crab-v0.5.1...ghost-crab-v0.6.0) - 2024-07-24
+
+### Added
+- Add rate limit layer
+
 ## [0.5.1](https://github.com/stakelens/ghost-crab/compare/ghost-crab-v0.5.0...ghost-crab-v0.5.1) - 2024-07-23
 
 ### Fixed
