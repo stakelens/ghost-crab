@@ -41,10 +41,17 @@ pub struct BlockHandler {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct NetworkConfig {
+    pub rpc_url: String,
+    pub requests_per_second: u64,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Config {
     pub data_sources: HashMap<String, DataSource>,
     pub templates: HashMap<String, Template>,
-    pub networks: HashMap<String, String>,
+    pub networks: HashMap<String, NetworkConfig>,
     pub block_handlers: HashMap<String, BlockHandler>,
 }
 
@@ -103,9 +110,9 @@ fn parse_config(config_string: &str) -> Result<Config, ConfigError> {
 
 fn replace_env_vars(config: &mut Config) -> Result<(), ConfigError> {
     for (_key, value) in &mut config.networks {
-        if value.starts_with('$') {
-            *value = env::var(&value[1..])
-                .map_err(|_| ConfigError::EnvVarNotFound(value[1..].to_string()))?;
+        if value.rpc_url.starts_with('$') {
+            (*value).rpc_url = env::var(&value.rpc_url[1..])
+                .map_err(|_| ConfigError::EnvVarNotFound(value.rpc_url[1..].to_string()))?;
         }
     }
 

@@ -29,6 +29,7 @@ pub trait EventHandler {
     fn address(&self) -> Address;
     fn network(&self) -> String;
     fn rpc_url(&self) -> String;
+    fn rate_limit(&self) -> u64;
     fn execution_mode(&self) -> ExecutionMode;
     fn event_signature(&self) -> String;
 }

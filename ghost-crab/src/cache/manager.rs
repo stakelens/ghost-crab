@@ -23,14 +23,19 @@ impl RPCManager {
         RPCManager { rpcs: HashMap::new() }
     }
 
-    pub async fn get_or_create(&mut self, network: String, rpc_url: String) -> CacheProvider {
+    pub async fn get_or_create(
+        &mut self,
+        network: String,
+        rpc_url: String,
+        rate_limit: u64,
+    ) -> CacheProvider {
         if let Some(provider) = self.rpcs.get(&rpc_url) {
             return provider.clone();
         }
 
         let cache = load_cache(&network).unwrap();
         let cache_layer = CacheLayer::new(cache);
-        let rate_limit_layer = RateLimitLayer::new(10_000, Duration::from_secs(1));
+        let rate_limit_layer = RateLimitLayer::new(rate_limit, Duration::from_secs(1));
 
         let client = ClientBuilder::default()
             .layer(cache_layer)

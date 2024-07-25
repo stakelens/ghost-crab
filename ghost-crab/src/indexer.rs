@@ -48,7 +48,10 @@ impl Indexer {
             return;
         }
 
-        let provider = self.rpc_manager.get_or_create(handler.network(), handler.rpc_url()).await;
+        let provider = self
+            .rpc_manager
+            .get_or_create(handler.network(), handler.rpc_url(), handler.rate_limit())
+            .await;
 
         self.handlers.push(ProcessEventsInput {
             start_block: handler.start_block(),
@@ -61,7 +64,10 @@ impl Indexer {
     }
 
     pub async fn load_block_handler(&mut self, handler: BlockHandlerInstance) {
-        let provider = self.rpc_manager.get_or_create(handler.network(), handler.rpc_url()).await;
+        let provider = self
+            .rpc_manager
+            .get_or_create(handler.network(), handler.rpc_url(), handler.rate_limit())
+            .await;
 
         self.block_handlers.push(ProcessBlocksInput {
             handler,
@@ -91,7 +97,9 @@ impl Indexer {
         while let Some(template) = self.rx.recv().await {
             let network = template.handler.network();
             let rpc_url = template.handler.rpc_url();
-            let provider = self.rpc_manager.get_or_create(network, rpc_url).await;
+            let rate_limit = template.handler.rate_limit();
+
+            let provider = self.rpc_manager.get_or_create(network, rpc_url, rate_limit).await;
 
             let handler = ProcessEventsInput {
                 start_block: template.start_block,

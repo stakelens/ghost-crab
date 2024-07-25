@@ -31,6 +31,7 @@ pub trait BlockHandler {
     fn network(&self) -> String;
     fn rpc_url(&self) -> String;
     fn start_block(&self) -> u64;
+    fn rate_limit(&self) -> u64;
     fn execution_mode(&self) -> ExecutionMode;
 }
 
