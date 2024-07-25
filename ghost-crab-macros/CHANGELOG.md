@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.4...ghost-crab-macros-v0.1.5) - 2024-07-25
+
+### Added
+- Add requests per second to the "config.json"
+
 ## [0.1.4](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.3...ghost-crab-macros-v0.1.4) - 2024-07-23
 
 ### Added
