@@ -112,7 +112,7 @@ Block handlers are used to process blocks. They are defined as closures that imp
 Here's an example of a block handler that processes blocks:
 
 ```rust
-use alloy::{rpc::types::eth::BlockNumberOrTag, sol};
+use alloy::{eips::BlockId, sol};
 use ghost_crab::prelude::*;
 
 sol!(
@@ -121,22 +121,15 @@ sol!(
     "abis/stader/StaderStakePoolsManager.json"
 );
 
+const STADER: Address = address!("cf5EA1b38380f6aF39068375516Daf40Ed70D299");
+
 #[block_handler(Stader)]
 async fn StaderBlockHandler(ctx: BlockContext) {
-    let block_number = ctx.block.header.number.unwrap();
-
-    let stader_staking_manager = StaderStakePoolsManager::new(
-        "0xcf5EA1b38380f6aF39068375516Daf40Ed70D299"
-            .parse()
-            .unwrap(),
-        &ctx.provider,
-    );
+    let stader_staking_manager = StaderStakePoolsManager::new(STADER, &ctx.provider);
 
     let total_assets = stader_staking_manager
         .totalAssets()
-        .block(alloy::rpc::types::eth::BlockId::Number(
-            BlockNumberOrTag::Number(block_number),
-        ))
+        .block(BlockId::from(ctx.block_number))
         .call()
         .await
         .unwrap();
@@ -144,8 +137,9 @@ async fn StaderBlockHandler(ctx: BlockContext) {
     let db = db::get().await;
 
     let eth = total_assets._0.to_string();
-    let block_number = block_number as i64;
-    let block_timestamp = ctx.block.header.timestamp as i64;
+    let block_number = ctx.block_number as i64;
+    let block = ctx.block().await.unwrap().unwrap();
+    let block_timestamp = block.header.timestamp as i64;
 
     // Save the data to your database
 }
@@ -187,8 +181,6 @@ async fn ETHVaultDeposited(ctx: Context) {
 
 #[event_handler(VaultsRegistry.VaultAdded)]
 async fn VaultsRegistry(ctx: Context) {
-    let vault = event.vault.to_string();
-
     ctx.templates
         .start(Template {
             address: vault.clone(),
