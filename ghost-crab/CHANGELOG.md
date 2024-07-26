@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0](https://github.com/stakelens/ghost-crab/compare/ghost-crab-v0.7.1...ghost-crab-v0.8.0) - 2024-07-26
+
+### Added
+- Load "event_handler" config dynamically at runtime
+- load block handler config dynamically at runtime
+
+### Other
+- Refactor "get_provider"
+- Refactor indexer and add errors
+
 ## [0.7.1](https://github.com/stakelens/ghost-crab/compare/ghost-crab-v0.7.0...ghost-crab-v0.7.1) - 2024-07-26
 
 ### Added
