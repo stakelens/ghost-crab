@@ -25,21 +25,8 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let config = config::load().unwrap();
-    let source = config.block_handlers.get(name).expect("Source not found.");
-
-    let network_config =
-        config.networks.get(&source.network).expect("RPC url not found for network");
-    let rpc_url = Literal::string(&network_config.rpc_url);
-    let requests_per_second = Literal::u64_suffixed(network_config.requests_per_second);
-
-    let step = Literal::u64_suffixed(source.step);
-    let start_block = Literal::u64_suffixed(source.start_block);
-    let network = Literal::string(&source.network);
-
-    let execution_mode = match source.execution_mode {
-        Some(ExecutionMode::Serial) => quote! { ExecutionMode::Serial },
-        _ => quote! { ExecutionMode::Parallel },
-    };
+    let _ = config.block_handlers.get(name).expect("BlockHandler not found in the config.json");
+    let name = Literal::string(name);
 
     let parsed = parse_macro_input!(input as ItemFn);
     let fn_name = parsed.sig.ident.clone();
@@ -61,28 +48,8 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
                 #fn_body
             }
 
-            fn step(&self) -> u64 {
-                #step
-            }
-
-            fn network(&self) -> String {
-                String::from(#network)
-            }
-
-            fn rpc_url(&self) -> String {
-                String::from(#rpc_url)
-            }
-
-            fn rate_limit(&self) -> u64 {
-                #requests_per_second
-            }
-
-            fn start_block(&self) -> u64 {
-                #start_block
-            }
-
-            fn execution_mode(&self) -> ExecutionMode {
-                #execution_mode
+            fn name() -> String {
+                String::from(#name)
             }
         }
     })

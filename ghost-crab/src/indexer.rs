@@ -2,6 +2,7 @@ use crate::block_handler::{process_blocks, BlockHandlerInstance, ProcessBlocksIn
 use crate::cache::manager::RPCManager;
 use crate::event_handler::{process_events, EventHandlerInstance, ProcessEventsInput};
 use alloy::primitives::Address;
+use ghost_crab_common::config::{self, Config, ConfigError};
 use tokio::sync::mpsc::error::SendError;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
@@ -28,19 +29,23 @@ pub struct Indexer {
     block_handlers: Vec<ProcessBlocksInput>,
     templates: TemplateManager,
     rpc_manager: RPCManager,
+    config: Config,
 }
 
 impl Indexer {
-    pub fn new() -> Indexer {
+    pub fn new() -> Result<Indexer, ConfigError> {
         let (tx, rx) = mpsc::channel::<Template>(1);
 
-        Indexer {
+        let config = config::load()?;
+
+        Ok(Indexer {
+            config,
             handlers: Vec::new(),
             block_handlers: Vec::new(),
             templates: TemplateManager { tx },
             rpc_manager: RPCManager::new(),
             rx,
-        }
+        })
     }
 
     pub async fn load_event_handler(&mut self, handler: EventHandlerInstance) {
@@ -64,16 +69,25 @@ impl Indexer {
     }
 
     pub async fn load_block_handler(&mut self, handler: BlockHandlerInstance) {
-        let provider = self
-            .rpc_manager
-            .get_or_create(handler.network(), handler.rpc_url(), handler.rate_limit())
-            .await;
+        if let Some(block_config) = self.config.block_handlers.remove(&handler.name()) {
+            if let Some(network) = self.config.networks.get(&block_config.network) {
+                let provider = self
+                    .rpc_manager
+                    .get_or_create(
+                        block_config.network.clone(),
+                        network.rpc_url.clone(),
+                        network.requests_per_second,
+                    )
+                    .await;
 
-        self.block_handlers.push(ProcessBlocksInput {
-            handler,
-            templates: self.templates.clone(),
-            provider,
-        });
+                self.block_handlers.push(ProcessBlocksInput {
+                    handler,
+                    templates: self.templates.clone(),
+                    provider,
+                    config: block_config,
+                });
+            }
+        }
     }
 
     pub async fn start(mut self) {

@@ -6,6 +6,7 @@ use alloy::rpc::types::eth::Block;
 use alloy::rpc::types::eth::BlockNumberOrTag;
 use alloy::transports::TransportError;
 use async_trait::async_trait;
+use ghost_crab_common::config::BlockHandlerConfig;
 use ghost_crab_common::config::ExecutionMode;
 use std::sync::Arc;
 use std::time::Duration;
@@ -27,28 +28,22 @@ pub type BlockHandlerInstance = Arc<Box<(dyn BlockHandler + Send + Sync)>>;
 #[async_trait]
 pub trait BlockHandler {
     async fn handle(&self, params: BlockContext);
-    fn step(&self) -> u64;
-    fn network(&self) -> String;
-    fn rpc_url(&self) -> String;
-    fn start_block(&self) -> u64;
-    fn rate_limit(&self) -> u64;
-    fn execution_mode(&self) -> ExecutionMode;
+    fn name(&self) -> String;
 }
 
 pub struct ProcessBlocksInput {
     pub handler: BlockHandlerInstance,
     pub templates: TemplateManager,
     pub provider: CacheProvider,
+    pub config: BlockHandlerConfig,
 }
 
 pub async fn process_blocks(
-    ProcessBlocksInput { handler, templates, provider }: ProcessBlocksInput,
+    ProcessBlocksInput { handler, templates, provider, config }: ProcessBlocksInput,
 ) -> Result<(), TransportError> {
-    let step = handler.step();
-    let start_block = handler.start_block();
-    let execution_mode = handler.execution_mode();
+    let execution_mode = config.execution_mode.unwrap_or(ExecutionMode::Parallel);
 
-    let mut current_block = start_block;
+    let mut current_block = config.start_block;
     let mut latest_block_manager =
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 
@@ -83,6 +78,6 @@ pub async fn process_blocks(
             }
         }
 
-        current_block += step;
+        current_block += config.step;
     }
 }

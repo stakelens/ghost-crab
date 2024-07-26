@@ -32,7 +32,7 @@ pub struct DataSource {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct BlockHandler {
+pub struct BlockHandlerConfig {
     pub start_block: u64,
     pub network: String,
     pub execution_mode: Option<ExecutionMode>,
@@ -52,7 +52,7 @@ pub struct Config {
     pub data_sources: HashMap<String, DataSource>,
     pub templates: HashMap<String, Template>,
     pub networks: HashMap<String, NetworkConfig>,
-    pub block_handlers: HashMap<String, BlockHandler>,
+    pub block_handlers: HashMap<String, BlockHandlerConfig>,
 }
 
 #[derive(Debug)]
