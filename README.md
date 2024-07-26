@@ -94,7 +94,10 @@ In the above example, `EtherFi` is defined in the configuration as follows:
     }
   },
   "networks": {
-    "optimism": "$OPT_RPC_URL"
+    "optimism": {
+      "rpcUrl": "$OPT_RPC_URL",
+      "requestsPerSecond": 30
+    }
   }
 }
 ```
@@ -153,7 +156,10 @@ In the above example, `Stader` is defined in the configuration as follows:
     }
   },
   "networks": {
-    "ethereum": "$ETH_RPC_URL"
+    "ethereum": {
+      "rpcUrl": "$ETH_RPC_URL",
+      "requestsPerSecond": 30
+    }
   }
 }
 ```
@@ -210,7 +216,10 @@ GhostCrab uses a configuration file to specify the data sources, templates, and 
     }
   },
   "networks": {
-    "mainnet": "$MAINNET_RPC_URL"
+    "mainnet": {
+      "rpcUrl": "$MAINNET_RPC_URL",
+      "requestsPerSecond": 30
+    }
   },
   "blockHandlers": {
     "MyThirdDataSourceName": {
