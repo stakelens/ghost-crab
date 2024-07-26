@@ -1,9 +1,11 @@
+use alloy::hex::FromHexError;
 use core::fmt;
 
 #[derive(Debug)]
 pub enum AddHandlerError {
     NotFound(String),
     NetworkNotFound(String),
+    InvalidAddress { address: String, error: FromHexError },
 }
 
 impl fmt::Display for AddHandlerError {
@@ -14,6 +16,9 @@ impl fmt::Display for AddHandlerError {
             }
             AddHandlerError::NetworkNotFound(network) => {
                 write!(f, "Network not found: {}", network)
+            }
+            AddHandlerError::InvalidAddress { address, error } => {
+                write!(f, "Invalid address: {}.\nError: {}", address, error)
             }
         }
     }

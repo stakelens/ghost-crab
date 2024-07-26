@@ -2,6 +2,7 @@ use crate::block_handler::{process_blocks, BlockHandlerInstance, ProcessBlocksIn
 use crate::cache::manager::{CacheProvider, RPCManager};
 use crate::event_handler::{process_events, EventHandlerInstance, ProcessEventsInput};
 
+use alloy::primitives::Address;
 use ghost_crab_common::config::{self, Config, ConfigError};
 use tokio::sync::mpsc::{self, Receiver};
 
@@ -45,9 +46,13 @@ impl Indexer {
 
         let provider = self.get_provider(&event_config.network).await?;
 
+        let address = str::parse::<Address>(&event_config.address).map_err(|error| {
+            AddHandlerError::InvalidAddress { address: event_config.address, error }
+        })?;
+
         self.handlers.push(ProcessEventsInput {
             start_block: event_config.start_block,
-            address: event_config.address.parse().unwrap(),
+            address,
             step: 10_000,
             handler,
             templates: self.templates.clone(),
