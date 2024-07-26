@@ -1,10 +1,12 @@
 use crate::cache::manager::CacheProvider;
 use crate::indexer::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
+use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::Address;
 use alloy::providers::Provider;
 use alloy::rpc::types::eth::Filter;
 use alloy::rpc::types::eth::Log;
+use alloy::rpc::types::Block;
 use alloy::transports::TransportError;
 use async_trait::async_trait;
 use ghost_crab_common::config::ExecutionMode;
@@ -16,6 +18,19 @@ pub struct EventContext {
     pub provider: CacheProvider,
     pub templates: TemplateManager,
     pub contract_address: Address,
+}
+
+impl EventContext {
+    pub async fn block(&self) -> Result<Option<Block>, TransportError> {
+        match self.log.block_number {
+            Some(block_number) => {
+                self.provider
+                    .get_block_by_number(BlockNumberOrTag::Number(block_number), false)
+                    .await
+            }
+            None => Err(TransportError::local_usage_str("Error occurred while fetching the current block number within an EventHandler. The log.block_number value is None.")),
+        }
+    }
 }
 
 pub type EventHandlerInstance = Arc<Box<(dyn EventHandler + Send + Sync)>>;
