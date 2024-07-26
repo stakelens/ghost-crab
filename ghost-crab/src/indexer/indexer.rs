@@ -33,24 +33,42 @@ impl Indexer {
         })
     }
 
-    pub async fn load_event_handler(&mut self, handler: EventHandlerInstance) {
-        if handler.is_template() {
-            return;
-        }
+    pub async fn load_event_handler(
+        &mut self,
+        handler: EventHandlerInstance,
+    ) -> Result<(), AddHandlerError> {
+        let event_config = self
+            .config
+            .data_sources
+            .remove(&handler.name())
+            .ok_or(AddHandlerError::NotFound(handler.name()))?;
+
+        let network = self
+            .config
+            .networks
+            .get(&event_config.network)
+            .ok_or(AddHandlerError::NetworkNotFound(event_config.network.clone()))?;
 
         let provider = self
             .rpc_manager
-            .get_or_create(handler.network(), handler.rpc_url(), handler.rate_limit())
+            .get_or_create(
+                event_config.network,
+                network.rpc_url.clone(),
+                network.requests_per_second,
+            )
             .await;
 
         self.handlers.push(ProcessEventsInput {
-            start_block: handler.start_block(),
-            address: handler.address(),
+            start_block: event_config.start_block,
+            address: event_config.address.parse().unwrap(),
             step: 10_000,
             handler,
             templates: self.templates.clone(),
             provider,
+            execution_mode: event_config.execution_mode.unwrap_or(config::ExecutionMode::Parallel),
         });
+
+        Ok(())
     }
 
     pub async fn load_block_handler(
@@ -88,7 +106,7 @@ impl Indexer {
         Ok(())
     }
 
-    pub async fn start(mut self) {
+    pub async fn start(mut self) -> Result<(), AddHandlerError> {
         for block_handler in self.block_handlers {
             tokio::spawn(async move {
                 if let Err(error) = process_blocks(block_handler).await {
@@ -107,11 +125,26 @@ impl Indexer {
 
         // For dynamic sources (Templates)
         while let Some(template) = self.rx.recv().await {
-            let network = template.handler.network();
-            let rpc_url = template.handler.rpc_url();
-            let rate_limit = template.handler.rate_limit();
+            let template_config = self
+                .config
+                .templates
+                .get(&template.handler.name())
+                .ok_or(AddHandlerError::NotFound(template.handler.name()))?;
 
-            let provider = self.rpc_manager.get_or_create(network, rpc_url, rate_limit).await;
+            let network = self
+                .config
+                .networks
+                .get(&template_config.network)
+                .ok_or(AddHandlerError::NetworkNotFound(template_config.network.clone()))?;
+
+            let provider = self
+                .rpc_manager
+                .get_or_create(
+                    template_config.network.clone(),
+                    network.rpc_url.clone(),
+                    network.requests_per_second,
+                )
+                .await;
 
             let handler = ProcessEventsInput {
                 start_block: template.start_block,
@@ -120,6 +153,9 @@ impl Indexer {
                 handler: template.handler,
                 templates: self.templates.clone(),
                 provider,
+                execution_mode: template_config
+                    .execution_mode
+                    .unwrap_or(config::ExecutionMode::Parallel),
             };
 
             tokio::spawn(async move {
@@ -128,5 +164,7 @@ impl Indexer {
                 }
             });
         }
+
+        Ok(())
     }
 }

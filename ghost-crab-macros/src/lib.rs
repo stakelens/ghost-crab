@@ -1,5 +1,5 @@
 extern crate proc_macro;
-use ghost_crab_common::config::{self, ExecutionMode};
+use ghost_crab_common::config;
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Literal};
 use quote::{format_ident, quote};
@@ -103,51 +103,12 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
     let (name, event_name) = get_source_and_event(metadata);
     let config = config::load().unwrap();
 
-    let abi;
-    let network;
-    let execution_mode;
-    let address;
-    let start_block;
-
-    if is_template {
+    let abi = if is_template {
         let source = config.templates.get(&name).expect("Source not found.");
-
-        abi = source.abi.clone();
-        network = source.network.clone();
-        execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
-        address = quote! {
-            Address::ZERO
-        };
-        start_block = Literal::u64_suffixed(0);
+        Literal::string(&source.abi)
     } else {
         let source = config.data_sources.get(&name).expect("Source not found.");
-
-        abi = source.abi.clone();
-        network = source.network.clone();
-        execution_mode = source.execution_mode.clone().unwrap_or(ExecutionMode::Parallel);
-
-        let address_literal = Literal::string(&source.address[2..]);
-
-        address = quote! {
-            address!(#address_literal)
-        };
-        start_block = Literal::u64_suffixed(source.start_block);
-    };
-
-    let network_config = config.networks.get(&network).expect("RPC url not found for network");
-    let rpc_url = Literal::string(&network_config.rpc_url);
-    let requests_per_second = Literal::u64_suffixed(network_config.requests_per_second);
-
-    let abi = Literal::string(&abi);
-    let network = Literal::string(&network);
-
-    let execution_mode = match execution_mode {
-        ExecutionMode::Parallel => quote! {
-            ExecutionMode::Parallel
-        },
-        ExecutionMode::Serial => quote! {
-            ExecutionMode::Serial
-        },
+        Literal::string(&source.abi)
     };
 
     let parsed = parse_macro_input!(input as ItemFn);
@@ -187,36 +148,8 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
                 #fn_body
             }
 
-            fn start_block(&self) -> u64 {
-                #start_block
-            }
-
-            fn get_source(&self) -> String {
+            fn name(&self) -> String {
                 String::from(#data_source)
-            }
-
-            fn is_template(&self) -> bool {
-                #is_template
-            }
-
-            fn address(&self) -> Address {
-                #address
-            }
-
-            fn network(&self) -> String {
-                String::from(#network)
-            }
-
-            fn rpc_url(&self) -> String {
-                String::from(#rpc_url)
-            }
-
-            fn rate_limit(&self) -> u64 {
-                #requests_per_second
-            }
-
-            fn execution_mode(&self) -> ExecutionMode {
-                #execution_mode
             }
 
             fn event_signature(&self) -> String {

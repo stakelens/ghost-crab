@@ -38,14 +38,7 @@ pub type EventHandlerInstance = Arc<Box<(dyn EventHandler + Send + Sync)>>;
 #[async_trait]
 pub trait EventHandler {
     async fn handle(&self, params: EventContext);
-    fn get_source(&self) -> String;
-    fn is_template(&self) -> bool;
-    fn start_block(&self) -> u64;
-    fn address(&self) -> Address;
-    fn network(&self) -> String;
-    fn rpc_url(&self) -> String;
-    fn rate_limit(&self) -> u64;
-    fn execution_mode(&self) -> ExecutionMode;
+    fn name(&self) -> String;
     fn event_signature(&self) -> String;
 }
 
@@ -57,12 +50,12 @@ pub struct ProcessEventsInput {
     pub handler: EventHandlerInstance,
     pub templates: TemplateManager,
     pub provider: CacheProvider,
+    pub execution_mode: ExecutionMode,
 }
 
 pub async fn process_events(
-    ProcessEventsInput { start_block, step, address, handler, templates, provider }: ProcessEventsInput,
+    ProcessEventsInput { start_block, execution_mode, step, address, handler, templates, provider }: ProcessEventsInput,
 ) -> Result<(), TransportError> {
-    let execution_mode = handler.execution_mode();
     let event_signature = handler.event_signature();
 
     let mut current_block = start_block;
@@ -82,7 +75,7 @@ pub async fn process_events(
             continue;
         }
 
-        let source = handler.get_source();
+        let source = handler.name();
 
         println!("[{}] Processing logs from {} to {}", source, current_block, end_block);
 
