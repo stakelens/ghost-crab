@@ -50,7 +50,7 @@ async fn main() {
         .await
         .unwrap();
 
-    indexer.start().await;
+    indexer.start().await.unwrap();
 }
 ```
 
