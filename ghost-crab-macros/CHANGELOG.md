@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.5...ghost-crab-macros-v0.1.6) - 2024-07-26
+
+### Added
+- Load "event_handler" config dynamically at runtime
+- load block handler config dynamically at runtime
+
+### Other
+- Refactor indexer and add errors
+
 ## [0.1.5](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.4...ghost-crab-macros-v0.1.5) - 2024-07-25
 
 ### Added
