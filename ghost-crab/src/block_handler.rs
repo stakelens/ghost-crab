@@ -1,5 +1,5 @@
 use crate::cache::manager::CacheProvider;
-use crate::indexer::TemplateManager;
+use crate::indexer::templates::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
 use alloy::providers::Provider;
 use alloy::rpc::types::eth::Block;

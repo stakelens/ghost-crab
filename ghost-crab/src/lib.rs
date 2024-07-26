@@ -5,7 +5,7 @@ pub mod indexer;
 pub mod prelude;
 
 pub use ghost_crab_common::config;
-pub use indexer::Indexer;
+pub use indexer::indexer::Indexer;
 
 mod latest_block_manager;
 mod rate_limit;

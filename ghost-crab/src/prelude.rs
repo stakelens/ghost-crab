@@ -16,7 +16,7 @@ pub use crate::block_handler::{BlockContext, BlockHandler};
 pub use crate::cache;
 pub use crate::config;
 pub use crate::indexer;
-pub use crate::indexer::Template;
+pub use crate::indexer::templates::Template;
 pub use alloy::primitives::address;
 pub use alloy::primitives::Address;
 pub use alloy::providers::Provider;

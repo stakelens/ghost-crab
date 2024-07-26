@@ -1,27 +1,12 @@
 use crate::block_handler::{process_blocks, BlockHandlerInstance, ProcessBlocksInput};
 use crate::cache::manager::RPCManager;
 use crate::event_handler::{process_events, EventHandlerInstance, ProcessEventsInput};
-use alloy::primitives::Address;
+
 use ghost_crab_common::config::{self, Config, ConfigError};
-use tokio::sync::mpsc::error::SendError;
-use tokio::sync::mpsc::{self, Receiver, Sender};
+use tokio::sync::mpsc::{self, Receiver};
 
-pub struct Template {
-    pub start_block: u64,
-    pub address: Address,
-    pub handler: EventHandlerInstance,
-}
-
-#[derive(Clone)]
-pub struct TemplateManager {
-    tx: Sender<Template>,
-}
-
-impl TemplateManager {
-    pub async fn start(&self, template: Template) -> Result<(), SendError<Template>> {
-        self.tx.send(template).await
-    }
-}
+use super::error::AddHandlerError;
+use super::templates::{Template, TemplateManager};
 
 pub struct Indexer {
     handlers: Vec<ProcessEventsInput>,
@@ -42,7 +27,7 @@ impl Indexer {
             config,
             handlers: Vec::new(),
             block_handlers: Vec::new(),
-            templates: TemplateManager { tx },
+            templates: TemplateManager::new(tx),
             rpc_manager: RPCManager::new(),
             rx,
         })
@@ -68,26 +53,39 @@ impl Indexer {
         });
     }
 
-    pub async fn load_block_handler(&mut self, handler: BlockHandlerInstance) {
-        if let Some(block_config) = self.config.block_handlers.remove(&handler.name()) {
-            if let Some(network) = self.config.networks.get(&block_config.network) {
-                let provider = self
-                    .rpc_manager
-                    .get_or_create(
-                        block_config.network.clone(),
-                        network.rpc_url.clone(),
-                        network.requests_per_second,
-                    )
-                    .await;
+    pub async fn load_block_handler(
+        &mut self,
+        handler: BlockHandlerInstance,
+    ) -> Result<(), AddHandlerError> {
+        let block_config = self
+            .config
+            .block_handlers
+            .remove(&handler.name())
+            .ok_or(AddHandlerError::NotFound(handler.name()))?;
 
-                self.block_handlers.push(ProcessBlocksInput {
-                    handler,
-                    templates: self.templates.clone(),
-                    provider,
-                    config: block_config,
-                });
-            }
-        }
+        let network = self
+            .config
+            .networks
+            .get(&block_config.network)
+            .ok_or(AddHandlerError::NetworkNotFound(block_config.network.clone()))?;
+
+        let provider = self
+            .rpc_manager
+            .get_or_create(
+                block_config.network.clone(),
+                network.rpc_url.clone(),
+                network.requests_per_second,
+            )
+            .await;
+
+        self.block_handlers.push(ProcessBlocksInput {
+            handler,
+            templates: self.templates.clone(),
+            provider,
+            config: block_config,
+        });
+
+        Ok(())
     }
 
     pub async fn start(mut self) {

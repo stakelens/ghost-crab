@@ -48,7 +48,7 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
                 #fn_body
             }
 
-            fn name() -> String {
+            fn name(&self) -> String {
                 String::from(#name)
             }
         }
