@@ -24,7 +24,7 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
         panic!("The source is missing");
     }
 
-    let config = config::load().unwrap();
+    let config = config::load().expect("config.json not found");
     let _ = config.block_handlers.get(name).expect("BlockHandler not found in the config.json");
     let name = Literal::string(name);
 
@@ -101,7 +101,7 @@ fn get_context_identifier(parsed: ItemFn) -> Ident {
 
 fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) -> TokenStream {
     let (name, event_name) = get_source_and_event(metadata);
-    let config = config::load().unwrap();
+    let config = config::load().expect("config.json not found");
 
     let abi = if is_template {
         let source = config.templates.get(&name).expect("Source not found.");
@@ -141,7 +141,7 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
                 let decoded_log = #ctx
                     .log
                     .log_decode::<#contract_name::#event_name>()
-                    .unwrap();
+                    .expect("Error decoding log data");
 
                 let event = decoded_log.data();
 
