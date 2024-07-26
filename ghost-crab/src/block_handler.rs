@@ -31,6 +31,7 @@ pub trait BlockHandler {
     fn name(&self) -> String;
 }
 
+#[derive(Clone)]
 pub struct ProcessBlocksInput {
     pub handler: BlockHandlerInstance,
     pub templates: TemplateManager,
