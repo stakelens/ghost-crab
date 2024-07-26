@@ -1,12 +1,12 @@
+use super::rpc_manager::{Provider, RPCManager};
 use crate::block_handler::{process_blocks, BlockHandlerInstance, ProcessBlocksInput};
-use crate::cache::manager::{CacheProvider, RPCManager};
 use crate::event_handler::{process_events, EventHandlerInstance, ProcessEventsInput};
 
 use alloy::primitives::Address;
 use ghost_crab_common::config::{self, Config, ConfigError};
 use tokio::sync::mpsc::{self, Receiver};
 
-use super::error::AddHandlerError;
+use super::error::{Error, Result};
 use super::templates::{Template, TemplateManager};
 
 pub struct Indexer {
@@ -19,8 +19,8 @@ pub struct Indexer {
 }
 
 impl Indexer {
-    pub fn new() -> Result<Indexer, ConfigError> {
-        let (tx, rx) = mpsc::channel::<Template>(1);
+    pub fn new() -> core::result::Result<Indexer, ConfigError> {
+        let (tx, rx) = mpsc::channel::<Template>(100);
 
         let config = config::load()?;
 
@@ -34,21 +34,17 @@ impl Indexer {
         })
     }
 
-    pub async fn load_event_handler(
-        &mut self,
-        handler: EventHandlerInstance,
-    ) -> Result<(), AddHandlerError> {
+    pub async fn load_event_handler(&mut self, handler: EventHandlerInstance) -> Result<()> {
         let event_config = self
             .config
             .data_sources
             .remove(&handler.name())
-            .ok_or(AddHandlerError::NotFound(handler.name()))?;
+            .ok_or(Error::NotFound(handler.name()))?;
 
         let provider = self.get_provider(&event_config.network).await?;
 
-        let address = str::parse::<Address>(&event_config.address).map_err(|error| {
-            AddHandlerError::InvalidAddress { address: event_config.address, error }
-        })?;
+        let address = str::parse::<Address>(&event_config.address)
+            .map_err(|error| Error::InvalidAddress(error))?;
 
         self.handlers.push(ProcessEventsInput {
             start_block: event_config.start_block,
@@ -63,15 +59,12 @@ impl Indexer {
         Ok(())
     }
 
-    pub async fn load_block_handler(
-        &mut self,
-        handler: BlockHandlerInstance,
-    ) -> Result<(), AddHandlerError> {
+    pub async fn load_block_handler(&mut self, handler: BlockHandlerInstance) -> Result<()> {
         let block_config = self
             .config
             .block_handlers
             .remove(&handler.name())
-            .ok_or(AddHandlerError::NotFound(handler.name()))?;
+            .ok_or(Error::NotFound(handler.name()))?;
 
         let provider = self.get_provider(&block_config.network).await?;
 
@@ -85,12 +78,12 @@ impl Indexer {
         Ok(())
     }
 
-    async fn get_provider(&mut self, network_name: &str) -> Result<CacheProvider, AddHandlerError> {
+    async fn get_provider(&mut self, network_name: &str) -> Result<Provider> {
         let network = self
             .config
             .networks
             .get(network_name)
-            .ok_or(AddHandlerError::NetworkNotFound(network_name.to_string()))?;
+            .ok_or(Error::NetworkNotFound(network_name.to_string()))?;
 
         let provider = self
             .rpc_manager
@@ -99,12 +92,12 @@ impl Indexer {
                 network.rpc_url.clone(),
                 network.requests_per_second,
             )
-            .await;
+            .await?;
 
         Ok(provider)
     }
 
-    pub async fn start(mut self) -> Result<(), AddHandlerError> {
+    pub async fn start(mut self) -> Result<()> {
         for block_handler in self.block_handlers.clone() {
             tokio::spawn(async move {
                 if let Err(error) = process_blocks(block_handler).await {
@@ -127,7 +120,7 @@ impl Indexer {
                 .config
                 .templates
                 .get(&template.handler.name())
-                .ok_or(AddHandlerError::NotFound(template.handler.name()))?;
+                .ok_or(Error::NotFound(template.handler.name()))?;
 
             let execution_mode = config.execution_mode.unwrap_or(config::ExecutionMode::Parallel);
             let provider = self.get_provider(&config.network.clone()).await?;

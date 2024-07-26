@@ -1,18 +1,18 @@
-use alloy::providers::Provider;
+use alloy::providers::Provider as AlloyProvider;
 use alloy::transports::TransportError;
 use std::time::{Duration, Instant};
 
-use crate::cache::manager::CacheProvider;
+use crate::indexer::rpc_manager::Provider;
 
 pub struct LatestBlockManager {
-    provider: CacheProvider,
+    provider: Provider,
     cache_duration: Duration,
     block_number: Option<u64>,
     last_fetch: Instant,
 }
 
 impl LatestBlockManager {
-    pub fn new(provider: CacheProvider, cache_duration: Duration) -> Self {
+    pub fn new(provider: Provider, cache_duration: Duration) -> Self {
         Self { provider, cache_duration, block_number: None, last_fetch: Instant::now() }
     }
 

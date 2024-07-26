@@ -1,12 +1,5 @@
+use super::error::{Error, Result};
 use rocksdb::DB;
-
-#[derive(Debug)]
-pub enum Error {
-    DB(rocksdb::Error),
-    CacheFileNotFound(std::io::Error),
-}
-
-type Result<T> = core::result::Result<T, Error>;
 
 pub fn load_cache(network: &str) -> Result<DB> {
     let current_dir = std::env::current_dir().map_err(|e| Error::CacheFileNotFound(e))?;

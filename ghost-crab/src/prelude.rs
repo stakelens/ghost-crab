@@ -13,7 +13,6 @@ pub use std::sync::Arc;
 pub use tokio;
 
 pub use crate::block_handler::{BlockContext, BlockHandler};
-pub use crate::cache;
 pub use crate::config;
 pub use crate::indexer;
 pub use crate::indexer::templates::Template;

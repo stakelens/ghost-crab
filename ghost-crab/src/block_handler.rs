@@ -1,7 +1,7 @@
-use crate::cache::manager::CacheProvider;
+use crate::indexer::rpc_manager::Provider;
 use crate::indexer::templates::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
-use alloy::providers::Provider;
+use alloy::providers::Provider as AlloyProvider;
 use alloy::rpc::types::eth::Block;
 use alloy::rpc::types::eth::BlockNumberOrTag;
 use alloy::transports::TransportError;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub struct BlockContext {
-    pub provider: CacheProvider,
+    pub provider: Provider,
     pub templates: TemplateManager,
     pub block_number: u64,
 }
@@ -35,7 +35,7 @@ pub trait BlockHandler {
 pub struct ProcessBlocksInput {
     pub handler: BlockHandlerInstance,
     pub templates: TemplateManager,
-    pub provider: CacheProvider,
+    pub provider: Provider,
     pub config: BlockHandlerConfig,
 }
 

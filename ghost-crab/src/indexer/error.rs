@@ -2,26 +2,40 @@ use alloy::hex::FromHexError;
 use core::fmt;
 
 #[derive(Debug)]
-pub enum AddHandlerError {
+pub enum Error {
     NotFound(String),
+    DB(rocksdb::Error),
     NetworkNotFound(String),
-    InvalidAddress { address: String, error: FromHexError },
+    InvalidAddress(FromHexError),
+    CacheFileNotFound(std::io::Error),
+    InvalidRpcUrl(Box<dyn std::error::Error>),
 }
 
-impl fmt::Display for AddHandlerError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+pub type Result<T> = core::result::Result<T, Error>;
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AddHandlerError::NotFound(handler) => {
-                write!(f, "Handler not found: {}", handler)
+            Error::NotFound(handler) => {
+                writeln!(f, "Handler not found: {}", handler)
             }
-            AddHandlerError::NetworkNotFound(network) => {
-                write!(f, "Network not found: {}", network)
+            Error::DB(error) => {
+                writeln!(f, "Error while loading cache: {}", error)
             }
-            AddHandlerError::InvalidAddress { address, error } => {
-                write!(f, "Invalid address: {}.\nError: {}", address, error)
+            Error::NetworkNotFound(network) => {
+                writeln!(f, "Network not found: {}", network)
+            }
+            Error::InvalidAddress(error) => {
+                writeln!(f, "Invalid address: {}", error)
+            }
+            Error::CacheFileNotFound(error) => {
+                writeln!(f, "Cache file not found: {}", error)
+            }
+            Error::InvalidRpcUrl(error) => {
+                writeln!(f, "Invalid RPC url: {}", error)
             }
         }
     }
 }
 
-impl std::error::Error for AddHandlerError {}
+impl std::error::Error for Error {}

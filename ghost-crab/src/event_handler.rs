@@ -1,9 +1,9 @@
-use crate::cache::manager::CacheProvider;
+use crate::indexer::rpc_manager::Provider;
 use crate::indexer::templates::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::Address;
-use alloy::providers::Provider;
+use alloy::providers::Provider as AlloyProvider;
 use alloy::rpc::types::eth::Filter;
 use alloy::rpc::types::eth::Log;
 use alloy::rpc::types::Block;
@@ -15,7 +15,7 @@ use std::time::Duration;
 
 pub struct EventContext {
     pub log: Log,
-    pub provider: CacheProvider,
+    pub provider: Provider,
     pub templates: TemplateManager,
     pub contract_address: Address,
 }
@@ -49,7 +49,7 @@ pub struct ProcessEventsInput {
     pub step: u64,
     pub handler: EventHandlerInstance,
     pub templates: TemplateManager,
-    pub provider: CacheProvider,
+    pub provider: Provider,
     pub execution_mode: ExecutionMode,
 }
 
