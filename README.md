@@ -38,15 +38,17 @@ use handlers::stader;
 
 #[tokio::main]
 async fn main() {
-    let mut indexer = ghost_crab::Indexer::new();
+    let mut indexer = ghost_crab::Indexer::new().unwrap();
 
     indexer
         .load_event_handler(etherfi::EtherFiTVLUpdated::new())
-        .await;
+        .await
+        .unwrap();
 
     indexer
         .load_block_handler(stader::StaderBlockHandler::new())
-        .await;
+        .await
+        .unwrap();
 
     indexer.start().await;
 }
@@ -68,15 +70,7 @@ async fn EtherFiTVLUpdated(ctx: Context) {
     let current_tvl = event._currentTvl.to_string();
     let log_index = ctx.log.log_index.unwrap() as i64;
 
-    let block = ctx
-        .provider
-        .get_block_by_number(
-            BlockNumberOrTag::Number(ctx.log.block_number.unwrap()),
-            false,
-        )
-        .await
-        .unwrap()
-        .unwrap();
+    let block = ctx.block().await.unwrap().unwrap();
 
     let block_timestamp = block.header.timestamp as i64;
 
