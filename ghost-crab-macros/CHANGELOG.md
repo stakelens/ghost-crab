@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.6...ghost-crab-macros-v0.1.7) - 2024-07-26
+
+### Other
+- Use ".expect" instead of ".unwrap()" inside ghost-crab-macros
+
 ## [0.1.6](https://github.com/stakelens/ghost-crab/compare/ghost-crab-macros-v0.1.5...ghost-crab-macros-v0.1.6) - 2024-07-26
 
 ### Added
