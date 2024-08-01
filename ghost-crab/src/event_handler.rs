@@ -21,11 +21,11 @@ pub struct EventContext {
 }
 
 impl EventContext {
-    pub async fn block(&self) -> Result<Option<Block>, TransportError> {
+    pub async fn block(&self, hydrate: bool) -> Result<Option<Block>, TransportError> {
         match self.log.block_number {
             Some(block_number) => {
                 self.provider
-                    .get_block_by_number(BlockNumberOrTag::Number(block_number), false)
+                    .get_block_by_number(BlockNumberOrTag::Number(block_number), hydrate)
                     .await
             }
             None => Err(TransportError::local_usage_str("Error occurred while fetching the current block number within an EventHandler. The log.block_number value is None.")),
