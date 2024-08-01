@@ -18,8 +18,10 @@ pub struct BlockContext {
 }
 
 impl BlockContext {
-    pub async fn block(&self) -> Result<Option<Block>, TransportError> {
-        self.provider.get_block_by_number(BlockNumberOrTag::Number(self.block_number), false).await
+    pub async fn block(&self, hydrate: bool) -> Result<Option<Block>, TransportError> {
+        self.provider
+            .get_block_by_number(BlockNumberOrTag::Number(self.block_number), hydrate)
+            .await
     }
 }
 
