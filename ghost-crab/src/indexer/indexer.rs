@@ -1,7 +1,7 @@
 use super::rpc_manager::{Provider, RPCManager};
 use crate::block_handler::{process_blocks, BlockHandlerInstance, ProcessBlocksInput};
 use crate::event_handler::{process_events, EventHandlerInstance, ProcessEventsInput};
-use crate::progress::ProgressManager;
+use crate::logs::progress::ProgressManager;
 
 use alloy::primitives::Address;
 use ghost_crab_common::config::{self, Config, ConfigError};
@@ -72,7 +72,7 @@ impl Indexer {
         let provider = self.get_provider(&block_config.network).await?;
 
         let progress_channel =
-            self.progress_manager.create_progress(handler.name(), block_config.start_block);
+            self.progress_manager.create_progress(handler.name(), block_config.start_block).await;
 
         self.block_handlers.push(ProcessBlocksInput {
             handler,
