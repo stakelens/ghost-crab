@@ -74,7 +74,7 @@ pub async fn process_blocks(
                         .handle(BlockContext { provider, templates, block_number: current_block })
                         .await;
 
-                    progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks).await;
+                    progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(1)).await;
                 });
             }
             ExecutionMode::Serial => {
@@ -85,7 +85,7 @@ pub async fn process_blocks(
                     .handle(BlockContext { provider, templates, block_number: current_block })
                     .await;
 
-                progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks).await;
+                progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(1)).await;
             }
         }
 

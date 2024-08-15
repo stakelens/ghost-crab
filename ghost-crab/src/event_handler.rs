@@ -75,7 +75,7 @@ pub async fn process_events(
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 
     loop {
-        let mut end_block = current_block + step;
+        let mut end_block = current_block + step - 1; // Subtract 1 to avoid double-counting
         let latest_block = latest_block_manager.get().await?;
 
         progress_channel.send(ProgressUpdatePayload::UpdateEndBlock(latest_block)).await;
@@ -84,7 +84,7 @@ pub async fn process_events(
             end_block = latest_block;
         }
 
-        if current_block >= end_block {
+        if current_block > end_block {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
         }
@@ -103,7 +103,6 @@ pub async fn process_events(
                     let handler = handler.clone();
                     let provider = provider.clone();
                     let templates = templates.clone();
-                    let progress_channel = progress_channel.clone();
 
                     tokio::spawn(async move {
                         handler
@@ -113,10 +112,6 @@ pub async fn process_events(
                                 templates,
                                 contract_address: address,
                             })
-                            .await;
-
-                        progress_channel
-                            .send(ProgressUpdatePayload::IncrementProcessedBlocks)
                             .await;
                     });
                 }
@@ -134,12 +129,15 @@ pub async fn process_events(
                             contract_address: address,
                         })
                         .await;
-
-                    progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks).await;
                 }
             }
         }
 
-        current_block = end_block;
+        let blocks_processed = end_block - current_block + 1;
+        progress_channel
+            .send(ProgressUpdatePayload::IncrementProcessedBlocks(blocks_processed))
+            .await;
+
+        current_block = end_block + 1;
     }
 }

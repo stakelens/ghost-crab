@@ -46,8 +46,10 @@ impl Metrics {
             .set(value as i64);
     }
 
-    fn increment_processed_blocks(&self, label: &str) {
-        self.processed_blocks.get_or_create(&ProgressLabels { label: label.to_string() }).inc();
+    fn increment_processed_blocks(&self, label: &str, count: u64) {
+        self.processed_blocks
+            .get_or_create(&ProgressLabels { label: label.to_string() })
+            .inc_by(count);
     }
 
     fn update_end_block(&self, label: &str, value: u64) {
@@ -65,7 +67,7 @@ pub struct AppState {
 
 #[derive(Clone)]
 pub enum ProgressUpdatePayload {
-    IncrementProcessedBlocks,
+    IncrementProcessedBlocks(u64),
     UpdateEndBlock(u64),
 }
 
@@ -101,8 +103,8 @@ impl ProgressManager {
             while let Some((label, update)) = indexer_receiver.recv().await {
                 let state = update_state.lock().await;
                 match update {
-                    ProgressUpdatePayload::IncrementProcessedBlocks => {
-                        state.metrics.increment_processed_blocks(&label);
+                    ProgressUpdatePayload::IncrementProcessedBlocks(count) => {
+                        state.metrics.increment_processed_blocks(&label, count);
                     }
                     ProgressUpdatePayload::UpdateEndBlock(block) => {
                         state.metrics.update_end_block(&label, block);
@@ -118,7 +120,7 @@ impl ProgressManager {
         let state = self.state.lock().await;
         state.metrics.initialize_processed_blocks(&label);
         state.metrics.update_start_block(&label, start_block);
-        state.metrics.update_end_block(&label, 0);
+        state.metrics.update_end_block(&label, start_block);
 
         ProgressChannel::new(label, self.indexer_sender.clone())
     }
