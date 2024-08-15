@@ -1,101 +1,168 @@
-use super::server;
-use serde::Serialize;
-use std::sync::Arc;
-use tokio::sync::{
-    mpsc::{self, Receiver, Sender},
-    Mutex,
+use axum::{
+    body::Body,
+    extract::State,
+    http::{header::CONTENT_TYPE, StatusCode},
+    response::{IntoResponse, Response},
+    routing::get,
+    Router,
 };
+use prometheus_client::{
+    encoding::text::encode,
+    metrics::{counter::Counter, family::Family, gauge::Gauge},
+    registry::Registry,
+};
+use prometheus_client_derive_encode::EncodeLabelSet;
+use std::sync::Arc;
+use tokio::sync::{mpsc, Mutex};
 
-#[derive(Serialize, Clone)]
-pub struct ProgressState {
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+pub struct ProgressLabels {
     pub label: String,
-    pub start_block: u64,
-    pub current_block: u64,
-    pub end_block: u64,
 }
 
-pub struct ProgressUpdate {
-    id: usize,
-    payload: ProgressUpdatePayload,
+#[derive(Debug)]
+pub struct Metrics {
+    start_block: Family<ProgressLabels, Gauge>,
+    processed_blocks: Family<ProgressLabels, Counter>,
+    end_block: Family<ProgressLabels, Gauge>,
 }
 
+impl Metrics {
+    fn new() -> Self {
+        Self {
+            start_block: Family::default(),
+            processed_blocks: Family::default(),
+            end_block: Family::default(),
+        }
+    }
+
+    fn initialize_processed_blocks(&self, label: &str) {
+        let _ = self.processed_blocks.get_or_create(&ProgressLabels { label: label.to_string() });
+    }
+
+    fn update_start_block(&self, label: &str, value: u64) {
+        self.start_block
+            .get_or_create(&ProgressLabels { label: label.to_string() })
+            .set(value as i64);
+    }
+
+    fn increment_processed_blocks(&self, label: &str) {
+        self.processed_blocks.get_or_create(&ProgressLabels { label: label.to_string() }).inc();
+    }
+
+    fn update_end_block(&self, label: &str, value: u64) {
+        self.end_block
+            .get_or_create(&ProgressLabels { label: label.to_string() })
+            .set(value as i64);
+    }
+}
+
+#[derive(Debug)]
+pub struct AppState {
+    pub registry: Registry,
+    pub metrics: Arc<Metrics>,
+}
+
+#[derive(Clone)]
 pub enum ProgressUpdatePayload {
-    UpdateCurrentBlock(u64),
+    IncrementProcessedBlocks,
     UpdateEndBlock(u64),
 }
 
 pub struct ProgressManager {
-    progress_states: Arc<Mutex<Vec<ProgressState>>>,
-    indexer_receiver: Option<Receiver<ProgressUpdate>>,
-    indexer_sender: Sender<ProgressUpdate>,
+    state: Arc<Mutex<AppState>>,
+    indexer_sender: mpsc::Sender<(String, ProgressUpdatePayload)>,
 }
 
 impl ProgressManager {
-    pub fn new() -> ProgressManager {
-        let (indexer_sender, indexer_receiver) = mpsc::channel::<ProgressUpdate>(10_000);
+    pub fn new() -> Self {
+        let metrics = Arc::new(Metrics::new());
+        let mut registry = Registry::default();
 
-        let progress_states = Arc::new(Mutex::new(Vec::new()));
-        let server_progress_states = Arc::clone(&progress_states);
+        registry.register(
+            "start_block",
+            "Starting block for indexing",
+            metrics.start_block.clone(),
+        );
+        registry.register(
+            "processed_blocks",
+            "Number of blocks processed",
+            metrics.processed_blocks.clone(),
+        );
+        registry.register("end_block", "End block for indexing", metrics.end_block.clone());
 
+        let state = Arc::new(Mutex::new(AppState { registry, metrics }));
+
+        let (indexer_sender, mut indexer_receiver) =
+            mpsc::channel::<(String, ProgressUpdatePayload)>(10_000);
+
+        let update_state = Arc::clone(&state);
         tokio::spawn(async move {
-            server::init_server(server_progress_states).await;
-        });
-
-        ProgressManager {
-            progress_states,
-            indexer_sender,
-            indexer_receiver: Some(indexer_receiver),
-        }
-    }
-
-    pub async fn create_progress(&mut self, label: String, start_block: u64) -> ProgressChannel {
-        let progress_state = ProgressState { label, start_block, current_block: 0, end_block: 0 };
-        let id = self.progress_states.lock().await.len();
-        self.progress_states.lock().await.push(progress_state);
-        ProgressChannel::new(id, self.indexer_sender.clone())
-    }
-
-    pub fn start(&mut self) {
-        let mut indexer_receiver =
-            self.indexer_receiver.take().expect("Indexer receiver is missing");
-
-        let progress_states = Arc::clone(&self.progress_states);
-
-        tokio::spawn(async move {
-            while let Some(message) = indexer_receiver.recv().await {
-                let progress_states = Arc::clone(&progress_states);
-                let mut progress_states = progress_states.lock().await;
-
-                match message.payload {
-                    ProgressUpdatePayload::UpdateCurrentBlock(current_block) => {
-                        if current_block > progress_states[message.id].current_block {
-                            progress_states[message.id].current_block = current_block;
-                        }
+            while let Some((label, update)) = indexer_receiver.recv().await {
+                let state = update_state.lock().await;
+                match update {
+                    ProgressUpdatePayload::IncrementProcessedBlocks => {
+                        state.metrics.increment_processed_blocks(&label);
                     }
-                    ProgressUpdatePayload::UpdateEndBlock(end_block) => {
-                        progress_states[message.id].end_block = end_block;
+                    ProgressUpdatePayload::UpdateEndBlock(block) => {
+                        state.metrics.update_end_block(&label, block);
                     }
                 }
             }
+        });
+
+        ProgressManager { state, indexer_sender }
+    }
+
+    pub async fn create_progress(&self, label: String, start_block: u64) -> ProgressChannel {
+        let state = self.state.lock().await;
+        state.metrics.initialize_processed_blocks(&label);
+        state.metrics.update_start_block(&label, start_block);
+        state.metrics.update_end_block(&label, 0);
+
+        ProgressChannel::new(label, self.indexer_sender.clone())
+    }
+
+    pub fn start(&self) {
+        let state = self.state.clone();
+        tokio::spawn(async move {
+            let app = Router::new().route("/metrics", get(metrics_handler)).with_state(state);
+
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
+            println!("Metrics server listening on {}", listener.local_addr().unwrap());
+
+            axum::serve(listener, app).await.unwrap();
         });
     }
 }
 
 #[derive(Clone)]
 pub struct ProgressChannel {
-    id: usize,
-    channel: Sender<ProgressUpdate>,
+    label: String,
+    channel: mpsc::Sender<(String, ProgressUpdatePayload)>,
 }
 
 impl ProgressChannel {
-    pub fn new(id: usize, channel: Sender<ProgressUpdate>) -> ProgressChannel {
-        ProgressChannel { id, channel }
+    pub fn new(label: String, channel: mpsc::Sender<(String, ProgressUpdatePayload)>) -> Self {
+        Self { label, channel }
     }
 
     pub async fn send(&self, payload: ProgressUpdatePayload) {
         self.channel
-            .send(ProgressUpdate { id: self.id, payload })
+            .send((self.label.clone(), payload))
             .await
             .expect("Failed to send progress update");
     }
+}
+
+async fn metrics_handler(State(state): State<Arc<Mutex<AppState>>>) -> impl IntoResponse {
+    let state = state.lock().await;
+    let mut buffer = String::new();
+    encode(&mut buffer, &state.registry).unwrap();
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, "text/plain; charset=utf-8")
+        .body(Body::from(buffer))
+        .unwrap()
 }

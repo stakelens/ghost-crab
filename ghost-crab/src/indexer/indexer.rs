@@ -49,6 +49,9 @@ impl Indexer {
         let address = str::parse::<Address>(&event_config.address)
             .map_err(|error| Error::InvalidAddress(error))?;
 
+        let progress_channel =
+            self.progress_manager.create_progress(handler.name(), event_config.start_block).await;
+
         self.event_handlers.push(ProcessEventsInput {
             start_block: event_config.start_block,
             address,
@@ -57,6 +60,7 @@ impl Indexer {
             templates: self.templates.clone(),
             provider,
             execution_mode: event_config.execution_mode.unwrap_or(config::ExecutionMode::Parallel),
+            progress_channel,
         });
 
         Ok(())
@@ -134,6 +138,11 @@ impl Indexer {
             let execution_mode = config.execution_mode.unwrap_or(config::ExecutionMode::Parallel);
             let provider = self.get_provider(&config.network.clone()).await?;
 
+            let progress_channel = self
+                .progress_manager
+                .create_progress(template.handler.name(), template.start_block)
+                .await;
+
             let handler = ProcessEventsInput {
                 start_block: template.start_block,
                 address: template.address,
@@ -142,6 +151,7 @@ impl Indexer {
                 templates: self.templates.clone(),
                 provider,
                 execution_mode,
+                progress_channel,
             };
 
             tokio::spawn(async move {
