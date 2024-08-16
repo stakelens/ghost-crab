@@ -120,8 +120,8 @@ impl Prometheus {
 
         tokio::spawn(async move {
             let app = Router::new().route("/metrics", get(metrics_handler)).with_state(state);
-            let listener = tokio::net::TcpListener::bind(address).await.unwrap();
-            println!("Metrics server listening on {}", listener.local_addr().unwrap());
+            let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+            println!("Metrics server listening on {:?}", listener);
             axum::serve(listener, app).await.unwrap();
         });
     }
