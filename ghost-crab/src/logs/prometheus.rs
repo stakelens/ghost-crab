@@ -96,19 +96,21 @@ impl Prometheus {
         let mut receiver = self.receiver.take().expect("ProccessManager already started");
 
         tokio::spawn(async move {
-            while let Ok((id, payload)) = receiver.recv().await {
-                let state = Arc::clone(&state);
-                let state = state.lock().await;
+            loop {
+                if let Ok((id, payload)) = receiver.recv().await {
+                    let state = Arc::clone(&state);
+                    let state = state.lock().await;
 
-                match payload {
-                    ProgressUpdatePayload::IncrementProcessedBlocks(amount) => {
-                        state.metrics.increment_processed_blocks(id, amount);
-                    }
-                    ProgressUpdatePayload::UpdateEndBlock(end_block) => {
-                        state.metrics.update_end_block(id, end_block);
-                    }
-                    ProgressUpdatePayload::SetStartBlock(start_block) => {
-                        state.metrics.set_start_block(id, start_block);
+                    match payload {
+                        ProgressUpdatePayload::IncrementProcessedBlocks(amount) => {
+                            state.metrics.increment_processed_blocks(id, amount);
+                        }
+                        ProgressUpdatePayload::UpdateEndBlock(end_block) => {
+                            state.metrics.update_end_block(id, end_block);
+                        }
+                        ProgressUpdatePayload::SetStartBlock(start_block) => {
+                            state.metrics.set_start_block(id, start_block);
+                        }
                     }
                 }
             }

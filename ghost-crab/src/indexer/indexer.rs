@@ -9,7 +9,6 @@ use tokio::sync::mpsc::{self, Receiver};
 
 use super::error::{Error, Result};
 use super::templates::{Template, TemplateManager};
-use crate::logs::progress::ProgressUpdatePayload;
 
 pub struct Indexer {
     rx: Receiver<Template>,
@@ -54,9 +53,6 @@ impl Indexer {
             .map_err(|error| Error::InvalidAddress(error))?;
 
         let channel = self.progress_manager.create_progress(handler.name()).await;
-        channel.send(ProgressUpdatePayload::SetStartBlock(event_config.start_block)).await;
-        channel.send(ProgressUpdatePayload::UpdateEndBlock(event_config.start_block)).await;
-        channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(0)).await;
 
         self.event_handlers.push(ProcessEventsInput {
             start_block: event_config.start_block,
@@ -82,9 +78,6 @@ impl Indexer {
         let provider = self.get_provider(&block_config.network).await?;
 
         let channel = self.progress_manager.create_progress(handler.name()).await;
-        channel.send(ProgressUpdatePayload::SetStartBlock(block_config.start_block)).await;
-        channel.send(ProgressUpdatePayload::UpdateEndBlock(block_config.start_block)).await;
-        channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(0)).await;
 
         self.block_handlers.push(ProcessBlocksInput {
             handler,
@@ -147,9 +140,6 @@ impl Indexer {
             let provider = self.get_provider(&config.network.clone()).await?;
 
             let channel = self.progress_manager.create_progress(template.handler.name()).await;
-            channel.send(ProgressUpdatePayload::SetStartBlock(template.start_block)).await;
-            channel.send(ProgressUpdatePayload::UpdateEndBlock(template.start_block)).await;
-            channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(0)).await;
 
             let handler = ProcessEventsInput {
                 start_block: template.start_block,

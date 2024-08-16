@@ -36,19 +36,21 @@ impl ProgressManager {
         let state = Arc::clone(&self.state);
 
         tokio::spawn(async move {
-            while let Ok((id, payload)) = receiver.recv().await {
-                let state = Arc::clone(&state);
-                let mut state = state.lock().await;
+            loop {
+                if let Ok((id, payload)) = receiver.recv().await {
+                    let state = Arc::clone(&state);
+                    let mut state = state.lock().await;
 
-                match payload {
-                    ProgressUpdatePayload::IncrementProcessedBlocks(amount) => {
-                        state[id].current_block += amount;
-                    }
-                    ProgressUpdatePayload::UpdateEndBlock(end_block) => {
-                        state[id].end_block = end_block;
-                    }
-                    ProgressUpdatePayload::SetStartBlock(start_block) => {
-                        state[id].start_block = start_block;
+                    match payload {
+                        ProgressUpdatePayload::IncrementProcessedBlocks(amount) => {
+                            state[id].current_block += amount;
+                        }
+                        ProgressUpdatePayload::UpdateEndBlock(end_block) => {
+                            state[id].end_block = end_block;
+                        }
+                        ProgressUpdatePayload::SetStartBlock(start_block) => {
+                            state[id].start_block = start_block;
+                        }
                     }
                 }
             }

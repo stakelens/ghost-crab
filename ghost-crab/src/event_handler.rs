@@ -74,6 +74,10 @@ pub async fn process_events(
     let mut latest_block_manager =
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 
+    progress_channel.send(ProgressUpdatePayload::SetStartBlock(start_block)).await;
+    progress_channel.send(ProgressUpdatePayload::UpdateEndBlock(start_block)).await;
+    progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(0)).await;
+
     loop {
         let mut end_block = current_block + step - 1; // Subtract 1 to avoid double-counting
         let latest_block = latest_block_manager.get().await?;
