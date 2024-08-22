@@ -1,6 +1,8 @@
 use crate::indexer::rpc_manager::Provider;
 use crate::indexer::templates::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
+use crate::logs::progress::ProgressChannel;
+use crate::logs::progress::ProgressUpdatePayload;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::Address;
 use alloy::providers::Provider as AlloyProvider;
@@ -51,10 +53,20 @@ pub struct ProcessEventsInput {
     pub templates: TemplateManager,
     pub provider: Provider,
     pub execution_mode: ExecutionMode,
+    pub progress_channel: ProgressChannel,
 }
 
 pub async fn process_events(
-    ProcessEventsInput { start_block, execution_mode, step, address, handler, templates, provider }: ProcessEventsInput,
+    ProcessEventsInput {
+        start_block,
+        execution_mode,
+        step,
+        address,
+        handler,
+        templates,
+        provider,
+        progress_channel,
+    }: ProcessEventsInput,
 ) -> Result<(), TransportError> {
     let event_signature = handler.event_signature();
 
@@ -62,22 +74,24 @@ pub async fn process_events(
     let mut latest_block_manager =
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 
+    progress_channel.send(ProgressUpdatePayload::SetStartBlock(start_block)).await;
+    progress_channel.send(ProgressUpdatePayload::UpdateEndBlock(start_block)).await;
+    progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(0)).await;
+
     loop {
-        let mut end_block = current_block + step;
+        let mut end_block = current_block + step - 1; // Subtract 1 to avoid double-counting
         let latest_block = latest_block_manager.get().await?;
+
+        progress_channel.send(ProgressUpdatePayload::UpdateEndBlock(latest_block)).await;
 
         if end_block > latest_block {
             end_block = latest_block;
         }
 
-        if current_block >= end_block {
+        if current_block > end_block {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
         }
-
-        let source = handler.name();
-
-        println!("[{}] Processing logs from {} to {}", source, current_block, end_block);
 
         let filter = Filter::new()
             .address(address)
@@ -123,6 +137,11 @@ pub async fn process_events(
             }
         }
 
-        current_block = end_block;
+        let blocks_processed = end_block - current_block + 1;
+        progress_channel
+            .send(ProgressUpdatePayload::IncrementProcessedBlocks(blocks_processed))
+            .await;
+
+        current_block = end_block + 1;
     }
 }

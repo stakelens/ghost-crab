@@ -8,3 +8,4 @@ pub use indexer::indexer::Indexer;
 
 mod latest_block_manager;
 mod layers;
+mod logs;

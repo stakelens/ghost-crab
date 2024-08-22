@@ -1,6 +1,7 @@
 use super::rpc_manager::{Provider, RPCManager};
 use crate::block_handler::{process_blocks, BlockHandlerInstance, ProcessBlocksInput};
 use crate::event_handler::{process_events, EventHandlerInstance, ProcessEventsInput};
+use crate::logs::progress::ProgressManager;
 
 use alloy::primitives::Address;
 use ghost_crab_common::config::{self, Config, ConfigError};
@@ -10,12 +11,13 @@ use super::error::{Error, Result};
 use super::templates::{Template, TemplateManager};
 
 pub struct Indexer {
-    handlers: Vec<ProcessEventsInput>,
     rx: Receiver<Template>,
+    event_handlers: Vec<ProcessEventsInput>,
     block_handlers: Vec<ProcessBlocksInput>,
     templates: TemplateManager,
     rpc_manager: RPCManager,
     config: Config,
+    progress_manager: ProgressManager,
 }
 
 impl Indexer {
@@ -24,13 +26,17 @@ impl Indexer {
 
         let config = config::load()?;
 
+        let mut progress_manager = ProgressManager::new();
+        progress_manager.setup_prometheus(String::from("0.0.0.0:3000"));
+
         Ok(Indexer {
             config,
-            handlers: Vec::new(),
+            event_handlers: Vec::new(),
             block_handlers: Vec::new(),
             templates: TemplateManager::new(tx),
             rpc_manager: RPCManager::new(),
             rx,
+            progress_manager,
         })
     }
 
@@ -46,7 +52,9 @@ impl Indexer {
         let address = str::parse::<Address>(&event_config.address)
             .map_err(|error| Error::InvalidAddress(error))?;
 
-        self.handlers.push(ProcessEventsInput {
+        let channel = self.progress_manager.create_progress(handler.name()).await;
+
+        self.event_handlers.push(ProcessEventsInput {
             start_block: event_config.start_block,
             address,
             step: 10_000,
@@ -54,6 +62,7 @@ impl Indexer {
             templates: self.templates.clone(),
             provider,
             execution_mode: event_config.execution_mode.unwrap_or(config::ExecutionMode::Parallel),
+            progress_channel: channel,
         });
 
         Ok(())
@@ -68,11 +77,14 @@ impl Indexer {
 
         let provider = self.get_provider(&block_config.network).await?;
 
+        let channel = self.progress_manager.create_progress(handler.name()).await;
+
         self.block_handlers.push(ProcessBlocksInput {
             handler,
             templates: self.templates.clone(),
             provider,
             config: block_config,
+            progress_channel: channel,
         });
 
         Ok(())
@@ -98,6 +110,8 @@ impl Indexer {
     }
 
     pub async fn start(mut self) -> Result<()> {
+        self.progress_manager.start();
+
         for block_handler in self.block_handlers.clone() {
             tokio::spawn(async move {
                 if let Err(error) = process_blocks(block_handler).await {
@@ -106,7 +120,7 @@ impl Indexer {
             });
         }
 
-        for handler in self.handlers.clone() {
+        for handler in self.event_handlers.clone() {
             tokio::spawn(async move {
                 if let Err(error) = process_events(handler).await {
                     println!("Error processing logs for handler: {error}");
@@ -125,6 +139,8 @@ impl Indexer {
             let execution_mode = config.execution_mode.unwrap_or(config::ExecutionMode::Parallel);
             let provider = self.get_provider(&config.network.clone()).await?;
 
+            let channel = self.progress_manager.create_progress(template.handler.name()).await;
+
             let handler = ProcessEventsInput {
                 start_block: template.start_block,
                 address: template.address,
@@ -133,6 +149,7 @@ impl Indexer {
                 templates: self.templates.clone(),
                 provider,
                 execution_mode,
+                progress_channel: channel,
             };
 
             tokio::spawn(async move {

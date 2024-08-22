@@ -1,6 +1,8 @@
 use crate::indexer::rpc_manager::Provider;
 use crate::indexer::templates::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
+use crate::logs::progress::ProgressChannel;
+use crate::logs::progress::ProgressUpdatePayload;
 use alloy::providers::Provider as AlloyProvider;
 use alloy::rpc::types::eth::Block;
 use alloy::rpc::types::eth::BlockNumberOrTag;
@@ -39,10 +41,11 @@ pub struct ProcessBlocksInput {
     pub templates: TemplateManager,
     pub provider: Provider,
     pub config: BlockHandlerConfig,
+    pub progress_channel: ProgressChannel,
 }
 
 pub async fn process_blocks(
-    ProcessBlocksInput { handler, templates, provider, config }: ProcessBlocksInput,
+    ProcessBlocksInput { handler, templates, provider, config, progress_channel }: ProcessBlocksInput,
 ) -> Result<(), TransportError> {
     let execution_mode = config.execution_mode.unwrap_or(ExecutionMode::Parallel);
 
@@ -50,8 +53,13 @@ pub async fn process_blocks(
     let mut latest_block_manager =
         LatestBlockManager::new(provider.clone(), Duration::from_secs(10));
 
+    progress_channel.send(ProgressUpdatePayload::SetStartBlock(config.start_block)).await;
+    progress_channel.send(ProgressUpdatePayload::UpdateEndBlock(config.start_block)).await;
+    progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(0)).await;
+
     loop {
         let latest_block = latest_block_manager.get().await?;
+        progress_channel.send(ProgressUpdatePayload::UpdateEndBlock(latest_block)).await;
 
         if current_block >= latest_block {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
@@ -63,21 +71,25 @@ pub async fn process_blocks(
                 let handler = handler.clone();
                 let provider = provider.clone();
                 let templates = templates.clone();
+                let progress_channel = progress_channel.clone();
 
                 tokio::spawn(async move {
                     handler
                         .handle(BlockContext { provider, templates, block_number: current_block })
                         .await;
+
+                    progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(1)).await;
                 });
             }
             ExecutionMode::Serial => {
                 let templates = templates.clone();
                 let provider = provider.clone();
-                let templates = templates.clone();
 
                 handler
                     .handle(BlockContext { provider, templates, block_number: current_block })
                     .await;
+
+                progress_channel.send(ProgressUpdatePayload::IncrementProcessedBlocks(1)).await;
             }
         }
 
