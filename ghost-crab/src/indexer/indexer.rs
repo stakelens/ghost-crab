@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use super::progress_manager::ProgressManager;
 use super::rpc_manager::{Provider, RPCManager};
 use crate::block_handler::{process_blocks, BlockHandlerInstance, ProcessBlocksInput};
 use crate::event_handler::{process_events, EventHandlerInstance, ProcessEventsInput};
@@ -21,12 +22,12 @@ pub struct Indexer {
     rpc_manager: RPCManager,
     config: Config,
     monitoring: Arc<MonitoringSystem>,
+    progress: Arc<ProgressManager>,
 }
 
 impl Indexer {
     pub fn new() -> core::result::Result<Indexer, ConfigError> {
         let (tx, rx) = mpsc::channel::<Template>(100);
-
         let config = config::load()?;
 
         Ok(Indexer {
@@ -37,6 +38,7 @@ impl Indexer {
             rpc_manager: RPCManager::new(),
             rx,
             monitoring: MonitoringSystem::new(),
+            progress: ProgressManager::new(),
         })
     }
 
@@ -63,6 +65,7 @@ impl Indexer {
             provider,
             execution_mode: event_config.execution_mode.unwrap_or(config::ExecutionMode::Parallel),
             metrics,
+            progress: self.progress.clone(),
         });
 
         Ok(())
@@ -76,6 +79,7 @@ impl Indexer {
 
         let provider = self.get_provider(&block_config.network).await?;
 
+        // Register the handler with the monitoring system
         let metrics = self.monitoring.register_handler(handler.name(), HandlerType::Block).await;
 
         self.block_handlers.push(ProcessBlocksInput {
@@ -84,6 +88,7 @@ impl Indexer {
             provider,
             config: block_config,
             metrics,
+            progress: self.progress.clone(),
         });
 
         Ok(())
@@ -148,6 +153,7 @@ impl Indexer {
                 provider,
                 execution_mode,
                 metrics,
+                progress: self.progress.clone(),
             };
 
             tokio::spawn(async move {

@@ -1,4 +1,5 @@
 use crate::indexer::monitoring::HandlerMetrics;
+use crate::indexer::progress_manager::ProgressManager;
 use crate::indexer::rpc_manager::Provider;
 use crate::indexer::templates::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
@@ -58,6 +59,7 @@ pub struct ProcessEventsInput {
     pub provider: Provider,
     pub execution_mode: ExecutionMode,
     pub metrics: Arc<HandlerMetrics>,
+    pub progress: Arc<ProgressManager>,
 }
 
 pub async fn process_events(
@@ -66,6 +68,7 @@ pub async fn process_events(
         templates,
         provider,
         metrics,
+        progress,
         start_block,
         step,
         address,
@@ -96,6 +99,8 @@ pub async fn process_events(
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
         }
+
+        progress.update_progress(&handler.name(), current_block, latest_block).await;
 
         let filter = Filter::new()
             .address(address)

@@ -1,4 +1,5 @@
 use crate::indexer::monitoring::HandlerMetrics;
+use crate::indexer::progress_manager::ProgressManager;
 use crate::indexer::rpc_manager::Provider;
 use crate::indexer::templates::TemplateManager;
 use crate::latest_block_manager::LatestBlockManager;
@@ -44,10 +45,18 @@ pub struct ProcessBlocksInput {
     pub provider: Provider,
     pub config: BlockHandlerConfig,
     pub metrics: Arc<HandlerMetrics>,
+    pub progress: Arc<ProgressManager>,
 }
 
 pub async fn process_blocks(
-    ProcessBlocksInput { handler, templates, provider, config, metrics }: ProcessBlocksInput,
+    ProcessBlocksInput {
+        handler,
+        templates,
+        provider,
+        config,
+        metrics,
+        progress,
+    }: ProcessBlocksInput,
 ) -> Result<(), TransportError> {
     let execution_mode = config.execution_mode.unwrap_or(ExecutionMode::Parallel);
     let mut current_block = config.start_block;
@@ -68,6 +77,8 @@ pub async fn process_blocks(
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
         }
+
+        progress.update_progress(&handler.name(), current_block, latest_block).await;
 
         metrics.task_started();
 
