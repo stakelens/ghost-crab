@@ -44,7 +44,7 @@ pub fn block_handler(metadata: TokenStream, input: TokenStream) -> TokenStream {
 
         #[async_trait]
         impl BlockHandler for #fn_name {
-            async fn handle(&self, #fn_args) {
+            async fn handle(&self, #fn_args) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 #fn_body
             }
 
@@ -137,11 +137,11 @@ fn create_handler(metadata: TokenStream, input: TokenStream, is_template: bool) 
 
         #[async_trait]
         impl EventHandler for #fn_name {
-            async fn handle(&self, #fn_args) {
+            async fn handle(&self, #fn_args) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 let decoded_log = #ctx
                     .log
                     .log_decode::<#contract_name::#event_name>()
-                    .expect("Error decoding log data");
+                    .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
 
                 let event = decoded_log.data();
 
