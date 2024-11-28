@@ -153,8 +153,8 @@ impl HandlerMetrics {
         match &status.health_status {
             HealthStatus::Healthy => {
                 info!(
-                    handler = %log.handler_name,
-                    type = ?log.handler_type,
+                    handler_name = %log.handler_name,
+                    handler_type = ?log.handler_type,
                     last_block = log.last_block,
                     idle_for = ?log.idle_duration,
                     "Handler operating normally"
@@ -162,8 +162,8 @@ impl HandlerMetrics {
             }
             HealthStatus::Warning => {
                 warn!(
-                    handler = %log.handler_name,
-                    type = ?log.handler_type,
+                    handler_name = %log.handler_name,
+                    handler_type = ?log.handler_type,
                     last_block = log.last_block,
                     idle_for = ?log.idle_duration,
                     error = log.last_error.as_deref().unwrap_or("No error recorded"),
@@ -172,8 +172,8 @@ impl HandlerMetrics {
             }
             HealthStatus::Failed => {
                 error!(
-                    handler = %log.handler_name,
-                    type = ?log.handler_type,
+                    handler_name = %log.handler_name,
+                    handler_type = ?log.handler_type,
                     last_block = log.last_block,
                     idle_for = ?log.idle_duration,
                     error = log.last_error.as_deref().unwrap_or("No error recorded"),
