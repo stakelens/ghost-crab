@@ -17,6 +17,7 @@ pub struct BlockContext {
     pub provider: Provider,
     pub templates: TemplateManager,
     pub block_number: u64,
+    pub is_historical: bool,
 }
 
 impl BlockContext {
@@ -73,6 +74,8 @@ pub async fn process_blocks(
             }
         };
 
+        let is_historical = latest_block - current_block > 10;
+
         if current_block >= latest_block {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             continue;
@@ -91,7 +94,12 @@ pub async fn process_blocks(
 
                 tokio::spawn(async move {
                     match handler
-                        .handle(BlockContext { provider, templates, block_number: current_block })
+                        .handle(BlockContext {
+                            provider,
+                            templates,
+                            is_historical,
+                            block_number: current_block,
+                        })
                         .await
                     {
                         Ok(()) => metrics.task_completed(current_block),
@@ -104,6 +112,7 @@ pub async fn process_blocks(
                     .handle(BlockContext {
                         provider: provider.clone(),
                         templates: templates.clone(),
+                        is_historical,
                         block_number: current_block,
                     })
                     .await

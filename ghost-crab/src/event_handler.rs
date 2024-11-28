@@ -20,6 +20,7 @@ pub struct EventContext {
     pub provider: Provider,
     pub templates: TemplateManager,
     pub contract_address: Address,
+    pub is_historical: bool,
 }
 
 impl EventContext {
@@ -91,6 +92,8 @@ pub async fn process_events(
             }
         };
 
+        let is_historical = latest_block - current_block > 10;
+
         if end_block > latest_block {
             end_block = latest_block;
         }
@@ -134,6 +137,7 @@ pub async fn process_events(
                                 provider,
                                 templates,
                                 contract_address: address,
+                                is_historical,
                             })
                             .await
                         {
@@ -155,6 +159,7 @@ pub async fn process_events(
                             provider: provider.clone(),
                             templates: templates.clone(),
                             contract_address: address,
+                            is_historical,
                         })
                         .await
                     {
