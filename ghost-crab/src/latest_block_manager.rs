@@ -1,6 +1,7 @@
 use alloy::transports::TransportError;
 use alloy::{eips::BlockNumberOrTag, providers::Provider as AlloyProvider};
 use std::time::{Duration, Instant};
+use tracing::info;
 
 use crate::indexer::rpc_manager::Provider;
 
@@ -32,6 +33,8 @@ impl LatestBlockManager {
         let block_number = latest_finalized_block.header.number.ok_or_else(|| {
             TransportError::local_usage_str("Block number not available in block header".into())
         })?;
+
+        info!("Latest finalized block: {}", block_number);
 
         self.block_number = Some(block_number);
         self.last_fetch = Instant::now();

@@ -13,6 +13,7 @@ use super::error::{Error, Result};
 use super::templates::{Template, TemplateManager};
 
 use super::monitoring::{HandlerStatus, HandlerType, MonitoringSystem};
+use tracing::error;
 
 pub struct Indexer {
     handlers: Vec<ProcessEventsInput>,
@@ -114,18 +115,25 @@ impl Indexer {
     }
 
     pub async fn start(mut self) -> Result<()> {
+        let monitoring = self.monitoring.clone();
+        tokio::spawn(async move {
+            monitoring.start_logging().await;
+        });
+
         for block_handler in self.block_handlers.clone() {
+            let handler_name = block_handler.handler.name().clone();
             tokio::spawn(async move {
                 if let Err(error) = process_blocks(block_handler).await {
-                    println!("Error processing logs for block handler: {error}");
+                    error!("Error processing blocks for handler {}: {}", handler_name, error);
                 }
             });
         }
 
         for handler in self.handlers.clone() {
+            let handler_name = handler.handler.name().clone();
             tokio::spawn(async move {
                 if let Err(error) = process_events(handler).await {
-                    println!("Error processing logs for handler: {error}");
+                    error!("Error processing events for handler {}: {}", handler_name, error);
                 }
             });
         }
@@ -156,9 +164,14 @@ impl Indexer {
                 progress: self.progress.clone(),
             };
 
+            let handler_clone = handler.handler.clone();
             tokio::spawn(async move {
                 if let Err(error) = process_events(handler).await {
-                    println!("Error processing logs for handler: {error}");
+                    error!(
+                        "Error processing events for template handler {}: {}",
+                        handler_clone.name(),
+                        error
+                    );
                 }
             });
         }
