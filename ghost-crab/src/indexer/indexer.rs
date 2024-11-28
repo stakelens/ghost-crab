@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::rpc_manager::{Provider, RPCManager};
 use crate::block_handler::{process_blocks, BlockHandlerInstance, ProcessBlocksInput};
 use crate::event_handler::{process_events, EventHandlerInstance, ProcessEventsInput};
@@ -9,6 +11,8 @@ use tokio::sync::mpsc::{self, Receiver};
 use super::error::{Error, Result};
 use super::templates::{Template, TemplateManager};
 
+use super::monitoring::{HandlerStatus, HandlerType, MonitoringSystem};
+
 pub struct Indexer {
     handlers: Vec<ProcessEventsInput>,
     rx: Receiver<Template>,
@@ -16,6 +20,7 @@ pub struct Indexer {
     templates: TemplateManager,
     rpc_manager: RPCManager,
     config: Config,
+    monitoring: Arc<MonitoringSystem>,
 }
 
 impl Indexer {
@@ -31,6 +36,7 @@ impl Indexer {
             templates: TemplateManager::new(tx),
             rpc_manager: RPCManager::new(),
             rx,
+            monitoring: MonitoringSystem::new(),
         })
     }
 
@@ -43,6 +49,8 @@ impl Indexer {
 
         let provider = self.get_provider(&event_config.network).await?;
 
+        let metrics = self.monitoring.register_handler(handler.name(), HandlerType::Event).await;
+
         let address = str::parse::<Address>(&event_config.address)
             .map_err(|error| Error::InvalidAddress(error))?;
 
@@ -54,11 +62,11 @@ impl Indexer {
             templates: self.templates.clone(),
             provider,
             execution_mode: event_config.execution_mode.unwrap_or(config::ExecutionMode::Parallel),
+            metrics,
         });
 
         Ok(())
     }
-
     pub async fn load_block_handler(&mut self, handler: BlockHandlerInstance) -> Result<()> {
         let block_config = self
             .config
@@ -68,11 +76,14 @@ impl Indexer {
 
         let provider = self.get_provider(&block_config.network).await?;
 
+        let metrics = self.monitoring.register_handler(handler.name(), HandlerType::Block).await;
+
         self.block_handlers.push(ProcessBlocksInput {
             handler,
             templates: self.templates.clone(),
             provider,
             config: block_config,
+            metrics,
         });
 
         Ok(())
@@ -125,6 +136,9 @@ impl Indexer {
             let execution_mode = config.execution_mode.unwrap_or(config::ExecutionMode::Parallel);
             let provider = self.get_provider(&config.network.clone()).await?;
 
+            let metrics =
+                self.monitoring.register_handler(template.handler.name(), HandlerType::Event).await;
+
             let handler = ProcessEventsInput {
                 start_block: template.start_block,
                 address: template.address,
@@ -133,6 +147,7 @@ impl Indexer {
                 templates: self.templates.clone(),
                 provider,
                 execution_mode,
+                metrics,
             };
 
             tokio::spawn(async move {
@@ -143,5 +158,13 @@ impl Indexer {
         }
 
         Ok(())
+    }
+
+    pub async fn get_handler_status(&self) -> Vec<HandlerStatus> {
+        self.monitoring.get_all_statuses().await
+    }
+
+    pub async fn get_unhealthy_handlers(&self) -> Vec<HandlerStatus> {
+        self.monitoring.get_unhealthy_handlers().await
     }
 }
